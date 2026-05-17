@@ -3,141 +3,155 @@ let audioContext: AudioContext | null = null;
 let sourceNode: MediaElementAudioSourceNode | null = null;
 let compressorNode: DynamicsCompressorNode | null = null;
 let preGainNode: GainNode | null = null;
+
+let eqNodes: BiquadFilterNode[] = [];
+const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+
 let isNormalized = true;
 let isSkipping = false;
+let currentEqBands = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+// --- 🔄 СОСТОЯНИЕ ЛУПЕРА (Временное, сбрасывается при смене трека) ---
+let currentVideoId: string | null = null;
+let loopStart: number | null = null;
+let loopEnd: number | null = null;
+let playbackSpeed = 1.0;
+let preservesPitch = true;
 
 const target: HTMLElement | null = document.body;
 const config = { childList: true, subtree: true };
 
-// БАЗА ТАЙМКОДОВ
 let skipRules: Record<string, { title: string, intervals: { start: number; end: number }[] }> = {};
 
-// --- 💾 СИНХРОНИЗАЦИЯ С ПАМЯТЬЮ БРАУЗЕРА ---
-chrome.storage.local.get(['skipRules'], (result) => {
-  if (result.skipRules) {
-    skipRules = result.skipRules;
-    console.log('🎵 Melomanica: База таймкодов загружена', skipRules);
-  }
+chrome.storage.local.get(['skipRules', 'eqBands'], (result) => {
+  if (result.skipRules) skipRules = result.skipRules;
+  if (result.eqBands) currentEqBands = result.eqBands;
 });
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === 'local' && changes.skipRules) {
-    skipRules = changes.skipRules.newValue || {};
-    console.log('🎵 Melomanica: База таймкодов обновлена на лету', skipRules);
+  if (namespace === 'local') {
+    if (changes.skipRules) skipRules = changes.skipRules.newValue || {};
+    if (changes.eqBands) {
+      currentEqBands = changes.eqBands.newValue;
+      currentEqBands.forEach((val, i) => {
+        if (eqNodes[i]) eqNodes[i].gain.value = val;
+      });
+    }
   }
 });
 
-function toggleEffect() {
-  isNormalized = !isNormalized;
-  
-  sourceNode?.disconnect();
-  preGainNode?.disconnect();
-  compressorNode?.disconnect();
-  
-  if (isNormalized) {
-    if (sourceNode && preGainNode && compressorNode && audioContext) {
-      sourceNode.connect(preGainNode);
-      preGainNode.connect(compressorNode);
-      compressorNode.connect(audioContext.destination);
-    }
+function buildAudioChain() {
+  if (!sourceNode || !audioContext || eqNodes.length === 0) return;
+  sourceNode.disconnect(); preGainNode?.disconnect(); compressorNode?.disconnect(); eqNodes.forEach(n => n.disconnect());
+
+  for (let i = 0; i < eqNodes.length - 1; i++) eqNodes[i].connect(eqNodes[i + 1]);
+  const eqInput = eqNodes[0]; const eqOutput = eqNodes[eqNodes.length - 1];
+
+  if (isNormalized && preGainNode && compressorNode) {
+    sourceNode.connect(preGainNode); preGainNode.connect(eqInput); eqOutput.connect(compressorNode); compressorNode.connect(audioContext.destination);
   } else {
-    if (sourceNode && audioContext) {
-      sourceNode.connect(audioContext.destination);
-    }
+    sourceNode.connect(eqInput); eqOutput.connect(audioContext.destination);
   }
 }
 
-// --- 🥷 УМНЫЙ ЭКСТРАКТОР ID ---
+function toggleEffect() {
+  isNormalized = !isNormalized;
+  buildAudioChain();
+}
+
 function getActiveVideoId(): string | null {
   const urlId = new URLSearchParams(window.location.search).get('v');
   if (urlId) return urlId;
-
   const ytPlayer = document.querySelector('ytmusic-player');
-  if (ytPlayer && ytPlayer.getAttribute('video-id')) {
-    return ytPlayer.getAttribute('video-id');
-  }
-
+  if (ytPlayer && ytPlayer.getAttribute('video-id')) return ytPlayer.getAttribute('video-id');
   const ytpLink = document.querySelector('.ytp-title-link');
   if (ytpLink) {
     const match = ytpLink.getAttribute('href')?.match(/v=([a-zA-Z0-9_-]{11})/);
     if (match) return match[1];
   }
-
   const anyPlayerLink = document.querySelector('ytmusic-player-bar a[href*="watch?v="]');
   if (anyPlayerLink) {
     const match = anyPlayerLink.getAttribute('href')?.match(/v=([a-zA-Z0-9_-]{11})/);
     if (match) return match[1];
   }
-
   return null;
 }
 
-// --- 🎧 ИНИЦИАЛИЗАЦИЯ АУДИО (Защита от SPA и Suspended) ---
+// 🛠 СБРОС ЛУПЕРА (Вызывается при смене трека или из попапа)
+function resetLooper() {
+  loopStart = null;
+  loopEnd = null;
+  playbackSpeed = 1.0;
+  preservesPitch = true;
+  if (videoElement) {
+    videoElement.playbackRate = 1.0;
+    (videoElement as any).preservesPitch = true;
+    (videoElement as any).mozPreservesPitch = true;
+    (videoElement as any).webkitPreservesPitch = true;
+  }
+}
+
 function initAudio(element: HTMLVideoElement) {
-  // Если это тот же самый элемент, ничего не делаем
   if (videoElement === element) return;
   videoElement = element;
-  console.log('🎵 Melomanica: Video element attached!');
 
-  if (!audioContext) {
-    audioContext = new window.AudioContext();
-  }
+  if (!audioContext) audioContext = new window.AudioContext();
 
-  // Решаем проблему Suspended AudioContext (браузеры блокируют автоплей аудио без жеста пользователя)
   if (audioContext.state === 'suspended') {
-    const resumeAudio = () => {
-      audioContext?.resume();
-      document.removeEventListener('click', resumeAudio);
-    };
+    const resumeAudio = () => { audioContext?.resume(); document.removeEventListener('click', resumeAudio); };
     document.addEventListener('click', resumeAudio);
     videoElement.addEventListener('play', () => audioContext?.resume(), { once: true });
   }
 
-  // Очищаем старые ноды при пересоздании видео
   if (sourceNode) sourceNode.disconnect();
   sourceNode = audioContext.createMediaElementSource(videoElement);
 
-  if (!preGainNode) preGainNode = audioContext.createGain();
-  preGainNode.gain.value = 2.0;
+  if (!preGainNode) preGainNode = audioContext.createGain(); preGainNode.gain.value = 2.0;
+  if (!compressorNode) {
+    compressorNode = audioContext.createDynamicsCompressor();
+    compressorNode.threshold.value = -30; compressorNode.ratio.value = 4;
+  }
 
-  if (!compressorNode) compressorNode = audioContext.createDynamicsCompressor();
-  compressorNode.threshold.value = -30;
-  compressorNode.ratio.value = 4;
-  compressorNode.knee.value = 12;
-  compressorNode.attack.value = 0.01; 
-  compressorNode.release.value = 0.8;
-  
+  if (eqNodes.length === 0) {
+    EQ_FREQS.forEach((freq, i) => {
+      const node = audioContext!.createBiquadFilter();
+      node.type = 'peaking'; node.frequency.value = freq; node.Q.value = 1.41; node.gain.value = currentEqBands[i] || 0;
+      eqNodes.push(node);
+    });
+  }
   chrome.storage.local.get(['isFilterOn'], (data) => {
     isNormalized = data.isFilterOn !== undefined ? data.isFilterOn : true;
-    
-    if (isNormalized) {
-      sourceNode!.connect(preGainNode!);
-      preGainNode!.connect(compressorNode!);
-      compressorNode!.connect(audioContext!.destination);
-    } else {
-      sourceNode!.connect(audioContext!.destination);
-    }
+    buildAudioChain();
   });
 
-  // НАСТРОЙКА АВТО-СКИПА
   videoElement.addEventListener('timeupdate', () => {
     if (isSkipping) return;
-
     const videoId = getActiveVideoId();
     if (!videoId || !videoElement) return;
 
+    // Сброс лупера при смене трека
+    if (currentVideoId !== videoId) {
+      currentVideoId = videoId;
+      resetLooper();
+    }
+
     const currentTime = videoElement.currentTime;
 
+    // --- ЛОГИКА ЛУПЕРА ---
+    if (loopStart !== null && loopEnd !== null && currentTime >= loopEnd) {
+      isSkipping = true;
+      videoElement.currentTime = loopStart;
+      setTimeout(() => { isSkipping = false; }, 100);
+      return; // Выходим, чтобы не конфликтовать со скипами
+    }
+
+    // --- ЛОГИКА СКИПОВ ---
     if (skipRules[videoId] && skipRules[videoId].intervals) {
       skipRules[videoId].intervals.forEach(rule => {
         if (currentTime >= rule.start && currentTime < rule.end) {
           isSkipping = true;
           videoElement!.currentTime = rule.end + 0.1; 
-          console.log(`🎵 Melomanica: Скип фрагмента ${rule.start}s - ${rule.end}s`);
-
-          setTimeout(() => {
-            isSkipping = false;
-          }, 1000);
+          setTimeout(() => { isSkipping = false; }, 1000);
         }
       });
     }
@@ -146,42 +160,58 @@ function initAudio(element: HTMLVideoElement) {
 
 const observer = new MutationObserver(() => {
   const element = document.querySelector('video');
-  if (element) {
-    initAudio(element);
-    // НЕ отключаем observer, чтобы ловить пересоздание <video> при переходах по страницам SPA
-  }
+  if (element) initAudio(element);
 });
 
 if (target) observer.observe(target, config);
 
-// --- 📡 СВЯЗЬ С ИНТЕРФЕЙСОМ ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'toggle') {
-    toggleEffect();
-    sendResponse({ status: 'ok' });
+    toggleEffect(); sendResponse({ status: 'ok' });
   }
-  
   if (message.action === 'GET_CURRENT_SONG') {
     const videoId = getActiveVideoId();
     const titleNode = document.querySelector('ytmusic-player-bar yt-formatted-string.title');
     const title = titleNode ? titleNode.textContent : 'Неизвестный трек';
     sendResponse({ videoId, title });
   }
-
-  // НОВОЕ: Получение точного времени
   if (message.action === 'GET_CURRENT_TIME') {
     sendResponse({ currentTime: videoElement ? videoElement.currentTime : 0 });
   }
+  if (message.action === 'PLAY_MOMENT_LOCAL' && videoElement) {
+    isSkipping = true;
+    videoElement.currentTime = message.time;
+    videoElement.play();
+    setTimeout(() => { isSkipping = false; }, 1000);
+    sendResponse({ status: 'ok' });
+  }
 
-  // НОВОЕ: Перемотка на закладку
-  if (message.action === 'PLAY_MOMENT') {
-    if (videoElement && message.time !== undefined) {
-      isSkipping = true; // Блокируем авто-скип на секунду
-      videoElement.currentTime = message.time;
-      videoElement.play();
-      setTimeout(() => { isSkipping = false; }, 1000);
-      sendResponse({ status: 'playing' });
-    }
+  // --- API ЛУПЕРА ---
+  if (message.action === 'GET_LOOPER_STATE') {
+    sendResponse({ start: loopStart, end: loopEnd, speed: playbackSpeed, pitch: preservesPitch });
+  }
+  if (message.action === 'SET_LOOP_A' && videoElement) {
+    loopStart = videoElement.currentTime;
+    if (loopEnd !== null && loopStart >= loopEnd) loopEnd = null; // Защита от старт > конец
+    sendResponse({ start: loopStart, end: loopEnd });
+  }
+  if (message.action === 'SET_LOOP_B' && videoElement) {
+    loopEnd = videoElement.currentTime;
+    if (loopStart !== null && loopEnd <= loopStart) loopStart = null;
+    sendResponse({ start: loopStart, end: loopEnd });
+  }
+  if (message.action === 'RESET_LOOPER') {
+    resetLooper();
+    sendResponse({ status: 'ok' });
+  }
+  if (message.action === 'SET_LOOPER_CONFIG' && videoElement) {
+    playbackSpeed = message.speed;
+    preservesPitch = message.pitch;
+    videoElement.playbackRate = playbackSpeed;
+    (videoElement as any).preservesPitch = preservesPitch;
+    (videoElement as any).mozPreservesPitch = preservesPitch;
+    (videoElement as any).webkitPreservesPitch = preservesPitch;
+    sendResponse({ status: 'ok' });
   }
   return true;
 });

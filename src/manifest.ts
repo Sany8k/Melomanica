@@ -21,7 +21,7 @@ export default defineManifest({
   },
   content_scripts: [
     {
-      matches: ['http://*/*', 'https://*/*'],
+     "matches": ["<all_urls>"],
       js: ['src/contentScript/index.ts'],
     },
   ],
@@ -31,5 +31,9 @@ export default defineManifest({
       matches: [],
     },
   ],
-  permissions: ['storage'],
+  "permissions": [
+  "storage",
+  "activeTab",
+  "scripting"
+  ],
 })

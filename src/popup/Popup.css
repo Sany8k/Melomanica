@@ -1,11 +1,12 @@
-/* БАЗОВЫЕ НАСТРОЙКИ И СКРОЛЛБАР */
+body { margin: 0; padding: 0; background: #1c1c1e; }
+
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #48484a; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #636366; }
 
 @keyframes fadeIn { 
-  from { opacity: 0; transform: translateY(10px); } 
+  from { opacity: 0; transform: translateY(5px); } 
   to { opacity: 1; transform: translateY(0); } 
 }
 
@@ -13,33 +14,41 @@
 .btn-hover { cursor: pointer; transition: all 0.2s ease; }
 .btn-hover:hover:not(:disabled) { filter: brightness(1.1); transform: scale(0.98); }
 .btn-hover:active:not(:disabled) { filter: brightness(0.9); }
-.btn-hover:disabled { cursor: not-allowed; }
+.btn-hover:disabled { cursor: not-allowed; opacity: 0.5; }
 
-/* КОРНЕВОЙ КОНТЕЙНЕР */
+/* Динамическая ширина контейнера */
 .popup-container {
-  width: 320px;
+  width: 340px;
   background-color: #1c1c1e;
   color: #f5f5f7;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   padding: 20px;
   box-sizing: border-box;
   overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+.popup-container.wide { width: 660px; }
 
-/* ШАПКА */
+/* Header & Controls */
 .header-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .logo-wrapper { display: flex; align-items: center; gap: 10px; }
 .logo-icon { background: linear-gradient(135deg, #ff2a5f, #ff719a); padding: 8px; border-radius: 12px; }
 .logo-title { margin: 0; font-size: 20px; font-weight: 600; }
-.lang-btn { background: #2c2c2e; border: 1px solid #3a3a3c; color: #8e8e93; border-radius: 8px; padding: 4px 8px; font-size: 12px; cursor: pointer; transition: color 0.2s; }
 
-/* БЛОКИ (Эквалайзер, Скипы, Закладки) */
+.lang-btn, .adv-toggle-btn { 
+  background: #2c2c2e; border: 1px solid #3a3a3c; color: #8e8e93; 
+  border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600; 
+  cursor: pointer; transition: all 0.2s; 
+}
+.adv-toggle-btn.active { background: #0a84ff; color: white; border-color: #0a84ff; }
+.lang-btn:hover, .adv-toggle-btn:hover { background: #3a3a3c; color: white; }
+
+/* Main View Components */
 .section-card { background-color: #2c2c2e; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .section-title { margin: 0 0 4px 0; font-size: 15px; }
 .section-desc { margin: 0; font-size: 12px; color: #8e8e93; }
 
-/* ПЕРЕКЛЮЧАТЕЛЬ (ТОГГЛ) */
 .toggle-bg { width: 50px; height: 30px; border-radius: 15px; position: relative; cursor: pointer; transition: 0.3s ease; }
 .toggle-bg.on { background-color: #34c759; }
 .toggle-bg.off { background-color: #3a3a3c; }
@@ -47,28 +56,70 @@
 .toggle-bg.on .toggle-circle { left: 22px; }
 .toggle-bg.off .toggle-circle { left: 2px; }
 
-/* РАЗДЕЛИТЕЛЬ */
 .divider { border: none; border-top: 1px solid #3a3a3c; margin: 20px 0; }
-
-/* ТЕКУЩИЙ ТРЕК */
 .track-info-card { padding: 10px; border-radius: 8px; margin-bottom: 10px; transition: all 0.3s ease; }
 .track-info-card.active { background-color: #3a3a3c; border: 1px solid #48484a; }
 .track-info-card.inactive { background-color: #2c2c2e; border: 1px dashed #48484a; }
 .track-label { font-size: 11px; color: #8e8e93; margin-bottom: 4px; }
 .track-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ЭЛЕМЕНТЫ УПРАВЛЕНИЯ (Инпуты, Кнопки) */
 .input-group { display: flex; gap: 8px; margin-bottom: 15px; }
 .input-default { background-color: #3a3a3c; border: 1px solid #48484a; color: white; padding: 10px; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box; transition: border-color 0.2s; }
 .btn-primary { background-color: #0a84ff; color: white; border: none; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
 .btn-success { background-color: #34c759; color: white; border: none; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
-.btn-disabled { background-color: #3a3a3c !important; color: #8e8e93 !important; }
 
-/* СПИСКИ */
+/* Lists & Items */
 .list-container { background-color: #2c2c2e; border-radius: 12px; padding: 10px; max-height: 150px; overflow-y: auto; }
 .list-empty { text-align: center; color: #8e8e93; font-size: 13px; padding: 10px 0; }
 .list-item { display: flex; justify-content: space-between; align-items: center; background-color: #3a3a3c; padding: 8px 10px; border-radius: 8px; margin-bottom: 8px; }
 .list-item-clickable { cursor: pointer; }
 .badge { background-color: #0a84ff; color: white; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
-.delete-btn { background: none; border: none; cursor: pointer; color: #ff453a; padding: 0 5px; transition: transform 0.2s; }
-.delete-btn:hover { transform: scale(1.2); }
+.delete-btn, .icon-btn { background: none; border: none; cursor: pointer; padding: 0 5px; transition: transform 0.2s; font-size: 14px; }
+.delete-btn { color: #ff453a; }
+.icon-btn.success-text { color: #34c759; font-weight: bold; }
+.icon-btn.edit-text { color: #0a84ff; }
+.delete-btn:hover, .icon-btn:hover { transform: scale(1.2); }
+.item-content { overflow: hidden; width: 130px; display: flex; flex-direction: column; justify-content: center; }
+
+/* ================= ADVANCED LAYOUT ================= */
+.adv-layout { display: flex; gap: 20px; height: 350px; }
+.adv-sidebar { width: 130px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid #3a3a3c; padding-right: 15px; }
+.adv-tab { padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: #8e8e93; transition: all 0.2s; }
+.adv-tab:hover { background-color: #2c2c2e; color: white; }
+.adv-tab.active { background-color: #0a84ff; color: white; }
+.adv-content { flex: 1; display: flex; flex-direction: column; }
+
+/* EQUALIZER */
+.eq-panel { display: flex; justify-content: space-between; align-items: flex-start; height: 100%; padding-top: 10px; }
+.eq-column { display: flex; flex-direction: column; align-items: center; width: 40px; }
+.eq-freq { font-size: 11px; font-weight: bold; color: #f5f5f7; margin-bottom: 4px; }
+.eq-val { font-size: 10px; color: #0a84ff; margin-bottom: 10px; height: 12px; font-family: monospace; }
+.eq-slider { 
+  -webkit-appearance: slider-vertical; 
+  width: 6px; height: 140px; cursor: pointer; outline: none; margin-bottom: 15px;
+}
+.eq-desc { 
+  font-size: 10px; color: #8e8e93; writing-mode: vertical-rl; transform: rotate(180deg); 
+  height: 90px; text-align: right; line-height: 1.2; padding-top: 5px;
+}
+
+/* ИСПРАВЛЕННЫЕ СТИЛИ ПОЛЗУНКА СКОРОСТИ */
+.speed-slider {
+  -webkit-appearance: none;
+  background: #3a3a3c;
+  border-radius: 4px;
+  height: 6px;
+  outline: none;
+}
+.speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0a84ff;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+.btn-primary { flex-direction: column; }
+.btn-success { flex-direction: column; }
