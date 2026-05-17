@@ -6,13 +6,14 @@ type Lang = 'ru' | 'en';
 const i18n = {
   ru: {
     studioSound: 'Студийный звук', agcDesc: 'Нормализация громкости', autoSkip: 'Авто-Скип',
-    currentTrack: 'ТЕКУЩИЙ ТРЕК', nothingPlaying: 'Ничего не играет...', startSec: 'Старт (сек)',
-    endSec: 'Конец (сек)', bookmarks: 'Закладки', saveMoment: 'Текущий момент',
-    noBookmarks: 'Нет сохраненных моментов.', manualTime: 'Сек', momentLabel: 'Название',
-    errEnable: 'Включите песню', errFill: 'Заполните оба поля', btnAdv: 'ПРО', btnMain: 'НАЗАД',
+    currentTrack: 'ТЕКУЩИЙ ТРЕК', nothingPlaying: 'Ничего не играет...', startSec: 'Старт (напр. 1:15)',
+    endSec: 'Конец (напр. 2:30)', bookmarks: 'Закладки', saveMoment: 'Текущий момент',
+    noBookmarks: 'Нет сохраненных моментов.', manualTime: 'Время', momentLabel: 'Название',
+    errEnable: 'Включите песню', errFill: 'Заполните оба поля', errNum: 'Неверный формат времени', errNeg: 'Время не может быть < 0', errLogic: 'Старт должен быть < Конца',
+    btnAdv: 'ПРО', btnMain: 'НАЗАД',
     menuEq: 'Эквалайзер', menuLooper: 'Лупер & Скорость', eqTitle: '10-полосный Эквалайзер', eqReset: 'СБРОСИТЬ',
     
-    // LOOPER
+    // LOOPER & SKIP BTNS
     loopStartBtn: 'Начало (A)', loopEndBtn: 'Конец (B)', loopReset: 'Сброс',
     speed: 'Скорость', pitchToggle: 'Сохранять питч', pitchDesc: 'Если выкл, звук "поплывет" как на кассете',
     notSet: 'Не задано',
@@ -25,10 +26,10 @@ const i18n = {
   },
   en: {
     studioSound: 'Studio Sound', agcDesc: 'Volume Normalization', autoSkip: 'Auto-Skip',
-    currentTrack: 'CURRENT TRACK', nothingPlaying: 'Nothing is playing...', startSec: 'Start (sec)',
-    endSec: 'End (sec)', bookmarks: 'Bookmarks', saveMoment: 'Current Time',
-    noBookmarks: 'No saved moments.', manualTime: 'Sec', momentLabel: 'Label',
-    errEnable: 'Play a song first', errFill: 'Fill both fields', btnAdv: 'PRO', btnMain: 'BACK',
+    currentTrack: 'CURRENT TRACK', nothingPlaying: 'Nothing is playing...', startSec: 'Start (e.g. 1:15)',
+    endSec: 'End (e.g. 2:30)', bookmarks: 'Bookmarks', saveMoment: 'Current Time',
+    noBookmarks: 'No saved moments.', manualTime: 'Time', momentLabel: 'Label',
+    errEnable: 'Play a song first', errFill: 'Fill both fields', errNum: 'Invalid time format', errNeg: 'Time cannot be < 0', errLogic: 'Start must be < End', btnAdv: 'PRO', btnMain: 'BACK',
     menuEq: 'Equalizer', menuLooper: 'Looper & Speed', eqTitle: '10-Band Equalizer', eqReset: 'RESET',
 
     loopStartBtn: 'Start (A)', loopEndBtn: 'End (B)', loopReset: 'Reset',
@@ -41,6 +42,25 @@ const i18n = {
       { f: '2k', desc: 'Attack' }, { f: '4k', desc: 'Presence' }, { f: '8k', desc: 'Cymbals' }, { f: '16k', desc: 'Air' }
     ]
   }
+};
+
+// 🛠 УМНЫЙ ПАРСЕР ВРЕМЕНИ
+const parseTimeToSeconds = (timeStr: string): number | null => {
+  if (!timeStr.trim()) return null;
+  // Заменяем точку, запятую, точку с запятой и пробел на двоеточие
+  const normalized = timeStr.trim().replace(/[.,; ]+/g, ':');
+  const parts = normalized.split(':');
+
+  if (parts.length === 1) {
+    const val = Number(parts[0]);
+    return isNaN(val) ? null : val;
+  } else if (parts.length === 2) {
+    const m = Number(parts[0]);
+    const s = Number(parts[1]);
+    if (isNaN(m) || isNaN(s)) return null;
+    return m * 60 + s;
+  }
+  return null;
 };
 
 export const Popup = () => {
@@ -59,7 +79,6 @@ export const Popup = () => {
   const [editingMoment, setEditingMoment] = useState<{ id: string, index: number } | null>(null);
   const [editLabel, setEditLabel] = useState('');
 
-  // Looper State
   const [looperState, setLooperState] = useState({ start: null as number | null, end: null as number | null, speed: 1.0, pitch: true });
 
   const t = i18n[lang];
@@ -98,91 +117,63 @@ export const Popup = () => {
   };
 
   // --- ФУНКЦИИ ЛУПЕРА ---
-  const handleSetA = () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOP_A' }, (res) => {
-        if (res) setLooperState(prev => ({ ...prev, start: res.start, end: res.end }));
-      });
-    });
-  };
+  const handleSetA = () => { chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => { if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOP_A' }, (res) => { if (res) setLooperState(prev => ({ ...prev, start: res.start, end: res.end })); }); }); };
+  const handleSetB = () => { chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => { if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOP_B' }, (res) => { if (res) setLooperState(prev => ({ ...prev, start: res.start, end: res.end })); }); }); };
+  const handleResetLooper = () => { chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => { if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'RESET_LOOPER' }, () => { setLooperState({ start: null, end: null, speed: 1.0, pitch: true }); }); }); };
+  const handleConfigChange = (speed: number, pitch: boolean) => { setLooperState(prev => ({ ...prev, speed, pitch })); chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => { if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOPER_CONFIG', speed, pitch }); }); };
 
-  const handleSetB = () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOP_B' }, (res) => {
-        if (res) setLooperState(prev => ({ ...prev, start: res.start, end: res.end }));
-      });
-    });
-  };
-
-  const handleResetLooper = () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'RESET_LOOPER' }, () => {
-        setLooperState({ start: null, end: null, speed: 1.0, pitch: true });
-      });
-    });
-  };
-
-  const handleConfigChange = (speed: number, pitch: boolean) => {
-    setLooperState(prev => ({ ...prev, speed, pitch }));
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOPER_CONFIG', speed, pitch });
-    });
-  };
-
-  // --- СТАРЫЕ ФУНКЦИИ ---
-  const handleEqChange = (index: number, value: string) => {
-    const newBands = [...eqBands]; newBands[index] = Number(value);
-    setEqBands(newBands); chrome.storage.local.set({ eqBands: newBands });
-  };
+  // --- ОБЩИЕ ФУНКЦИИ ---
+  const handleEqChange = (index: number, value: string) => { const newBands = [...eqBands]; newBands[index] = Number(value); setEqBands(newBands); chrome.storage.local.set({ eqBands: newBands }); };
   const resetEq = () => { const empty = [0,0,0,0,0,0,0,0,0,0]; setEqBands(empty); chrome.storage.local.set({ eqBands: empty }); };
-
   const toggleLang = () => { const newLang = lang === 'ru' ? 'en' : 'ru'; setLang(newLang); chrome.storage.local.set({ lang: newLang }); };
   const toggleAudioFilter = async () => { const newState = !isFilterOn; setIsFilterOn(newState); chrome.storage.local.set({ isFilterOn: newState }); const tabs = await chrome.tabs.query({ active: true, currentWindow: true }); if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'toggle' }); };
   
+  // 🛠 ФУНКЦИЯ ДЛЯ ВЗЯТИЯ ВРЕМЕНИ ДЛЯ СКИПОВ
+  const fetchCurrentTimeForInput = (type: 'start' | 'end') => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'GET_CURRENT_TIME' }, (r) => {
+          if (r && r.currentTime !== undefined) {
+            const formatted = formatTime(r.currentTime);
+            if (type === 'start') setStart(formatted);
+            else setEnd(formatted);
+          }
+        });
+      }
+    });
+  };
+
   const handleAddRule = () => {
-    if (!currentSong) return setError(t.errEnable); if (!start || !end) return setError(t.errFill);
-    const s = Number(start), e = Number(end); const newRules = { ...rules }; const videoId = currentSong.id;
+    if (!currentSong) return setError(t.errEnable); 
+    
+    // Парсим умным парсером
+    const s = parseTimeToSeconds(start);
+    const e = parseTimeToSeconds(end);
+
+    if (s === null || e === null) return setError(t.errNum);
+    if (s < 0 || e < 0) return setError(t.errNeg);
+    if (s >= e) return setError(t.errLogic);
+
+    const newRules = { ...rules }; const videoId = currentSong.id;
     if (!newRules[videoId]) newRules[videoId] = { title: currentSong.title, intervals: [] };
     newRules[videoId].intervals.push({ start: s, end: e }); newRules[videoId].intervals.sort((a, b) => a.start - b.start);
     setRules(newRules); chrome.storage.local.set({ skipRules: newRules }); setStart(''); setEnd(''); setError('');
   };
   
-  const handleDeleteRule = (id: string, indexToRemove: number) => {
-    const newRules = { ...rules }; newRules[id].intervals = newRules[id].intervals.filter((_, i) => i !== indexToRemove);
-    if (newRules[id].intervals.length === 0) delete newRules[id]; setRules(newRules); chrome.storage.local.set({ skipRules: newRules });
-  };
+  const handleDeleteRule = (id: string, indexToRemove: number) => { const newRules = { ...rules }; newRules[id].intervals = newRules[id].intervals.filter((_, i) => i !== indexToRemove); if (newRules[id].intervals.length === 0) delete newRules[id]; setRules(newRules); chrome.storage.local.set({ skipRules: newRules }); };
   
-  const saveMomentToStorage = (time: number, customLabel: string) => {
-    if (!currentSong) return; const newFavs = { ...favorites }; const videoId = currentSong.id;
-    if (!newFavs[videoId]) newFavs[videoId] = { title: currentSong.title, moments: [] };
-    newFavs[videoId].moments.push({ time, label: customLabel.trim() || `Момент ${newFavs[videoId].moments.length + 1}` });
-    newFavs[videoId].moments.sort((a, b) => a.time - b.time);
-    setFavorites(newFavs); chrome.storage.local.set({ favorites: newFavs });
-  };
-  
+  const saveMomentToStorage = (time: number, customLabel: string) => { if (!currentSong) return; const newFavs = { ...favorites }; const videoId = currentSong.id; if (!newFavs[videoId]) newFavs[videoId] = { title: currentSong.title, moments: [] }; newFavs[videoId].moments.push({ time, label: customLabel.trim() || `Момент ${newFavs[videoId].moments.length + 1}` }); newFavs[videoId].moments.sort((a, b) => a.time - b.time); setFavorites(newFavs); chrome.storage.local.set({ favorites: newFavs }); };
   const handleSaveCurrentMoment = () => { chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => { if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'GET_CURRENT_TIME' }, (r) => { if (r && r.currentTime !== undefined) saveMomentToStorage(Math.floor(r.currentTime), ''); }); }); };
-  const handleSaveManualMoment = () => { if (!currentSong || !manualTime || !manualLabel.trim()) return setError(t.errFill); saveMomentToStorage(Number(manualTime), manualLabel); setManualTime(''); setManualLabel(''); setError(''); };
   
-  // Умная навигация
-  const playMoment = (targetVideoId: string, time: number) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs[0];
-      if (!tab?.id) return;
-      const onYouTubeMusic = (tab.url || '').includes('music.youtube.com');
-      if (onYouTubeMusic && currentSong?.id === targetVideoId) {
-        chrome.tabs.sendMessage(tab.id, { action: 'PLAY_MOMENT_LOCAL', time });
-      } else if (onYouTubeMusic) {
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id }, world: 'MAIN',
-          func: (vid, t) => { const ytApp = document.querySelector('ytmusic-app') as any; if (ytApp && typeof ytApp.navigate_ === 'function') ytApp.navigate_(`/watch?v=${vid}&t=${t}`); else window.location.href = `/watch?v=${vid}&t=${t}`; },
-          args: [targetVideoId, time]
-        });
-      } else {
-        chrome.tabs.update(tab.id, { url: `https://music.youtube.com/watch?v=${targetVideoId}&t=${time}` });
-      }
-    });
+  const handleSaveManualMoment = () => { 
+    if (!currentSong || !manualTime || !manualLabel.trim()) return setError(t.errFill); 
+    const time = parseTimeToSeconds(manualTime);
+    if (time === null) return setError(t.errNum);
+    saveMomentToStorage(time, manualLabel); 
+    setManualTime(''); setManualLabel(''); setError(''); 
   };
   
+  const playMoment = (targetVideoId: string, time: number) => { chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => { const tab = tabs[0]; if (!tab?.id) return; const onYouTubeMusic = (tab.url || '').includes('music.youtube.com'); if (onYouTubeMusic && currentSong?.id === targetVideoId) { chrome.tabs.sendMessage(tab.id, { action: 'PLAY_MOMENT_LOCAL', time }); } else if (onYouTubeMusic) { chrome.scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: (vid, t) => { const ytApp = document.querySelector('ytmusic-app') as any; if (ytApp && typeof ytApp.navigate_ === 'function') ytApp.navigate_(`/watch?v=${vid}&t=${t}`); else window.location.href = `/watch?v=${vid}&t=${t}`; }, args: [targetVideoId, time] }); } else { chrome.tabs.update(tab.id, { url: `https://music.youtube.com/watch?v=${targetVideoId}&t=${time}` }); } }); };
   const handleStartEdit = (e: any, id: string, i: number, label: string) => { e.stopPropagation(); setEditingMoment({ id, index: i }); setEditLabel(label); };
   const handleCancelEdit = () => setEditingMoment(null);
   const handleSaveEdit = () => { if (!editingMoment) return; const { id, index } = editingMoment; if (editLabel.trim() !== '') { const newFavs = { ...favorites }; newFavs[id].moments[index].label = editLabel.trim(); setFavorites(newFavs); chrome.storage.local.set({ favorites: newFavs }); } setEditingMoment(null); };
@@ -214,21 +205,34 @@ export const Popup = () => {
             <div className={`toggle-bg ${isFilterOn ? 'on' : 'off'}`} onClick={toggleAudioFilter}><div className="toggle-circle"/></div>
           </div>
           <hr className="divider" />
+          
           <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>{t.autoSkip}</h3>
           <div className={`track-info-card ${currentSong ? 'active' : 'inactive'}`}>
             <div className="track-label">{t.currentTrack}</div>
             <div className="track-title">{currentSong ? currentSong.title : t.nothingPlaying}</div>
           </div>
+          
           <div style={{ marginBottom: '20px' }}>
+            {/* 🛠 НОВЫЕ КНОПКИ ВЗЯТИЯ ВРЕМЕНИ */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+              <button className={`btn-hover btn-primary ${!currentSong ? 'btn-disabled' : ''}`} disabled={!currentSong} style={{ flex: 1, padding: '6px', fontSize: '11px', borderRadius: '6px', flexDirection: 'row', gap: '5px' }} onClick={() => fetchCurrentTimeForInput('start')}>
+                 ⏱ {t.loopStartBtn}
+              </button>
+              <button className={`btn-hover btn-primary ${!currentSong ? 'btn-disabled' : ''}`} disabled={!currentSong} style={{ flex: 1, padding: '6px', fontSize: '11px', borderRadius: '6px', flexDirection: 'row', gap: '5px' }} onClick={() => fetchCurrentTimeForInput('end')}>
+                 ⏱ {t.loopEndBtn}
+              </button>
+            </div>
+            
             <div className="input-group">
-              <input type="number" min="0" placeholder={t.startSec} value={start} onChange={e => setStart(e.target.value)} className="input-default" style={{ width: '100%' }} disabled={!currentSong} />
-              <input type="number" min="0" placeholder={t.endSec} value={end} onChange={e => setEnd(e.target.value)} className="input-default" style={{ width: '100%' }} disabled={!currentSong} />
-              <button className={`btn-hover btn-primary ${!currentSong ? 'btn-disabled' : ''}`} onClick={handleAddRule} disabled={!currentSong} style={{ padding: '0 15px', fontSize: '18px' }}>+</button>
+              <input type="text" placeholder={t.startSec} value={start} onChange={e => setStart(e.target.value)} className="input-default" style={{ width: '100%' }} disabled={!currentSong} />
+              <input type="text" placeholder={t.endSec} value={end} onChange={e => setEnd(e.target.value)} className="input-default" style={{ width: '100%' }} disabled={!currentSong} />
+              <button className={`btn-hover btn-success ${!currentSong ? 'btn-disabled' : ''}`} onClick={handleAddRule} disabled={!currentSong} style={{ padding: '0 15px', fontSize: '18px' }}>+</button>
             </div>
             {error && <div style={{ color: '#ff453a', fontSize: '12px' }}>{error}</div>}
           </div>
+          
           <div className="list-container">
-            {Object.keys(rules).length === 0 ? ( <div className="list-empty">Правил пока нет</div> ) : ( Object.entries(rules).map(([id, ruleData]) => ( ruleData.intervals.map((rule, index) => ( <div key={`rule-${id}-${index}`} className="list-item animated-item"> <div style={{ overflow: 'hidden' }}> <div style={{ fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', width: '180px' }}>{ruleData.title}</div> <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>{rule.start}с — {rule.end}с</div> </div> <button className="delete-btn" onClick={() => handleDeleteRule(id, index)}>✕</button> </div> )) )) )}
+            {Object.keys(rules).length === 0 ? ( <div className="list-empty">Правил пока нет</div> ) : ( Object.entries(rules).map(([id, ruleData]) => ( ruleData.intervals.map((rule, index) => ( <div key={`rule-${id}-${index}`} className="list-item animated-item"> <div style={{ overflow: 'hidden' }}> <div style={{ fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', width: '180px' }}>{ruleData.title}</div> <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>{formatTime(rule.start)} — {formatTime(rule.end)}</div> </div> <button className="delete-btn" onClick={() => handleDeleteRule(id, index)}>✕</button> </div> )) )) )}
           </div>
           <hr className="divider" />
           <div className="flex-between" style={{ marginBottom: '10px' }}>
@@ -236,8 +240,8 @@ export const Popup = () => {
             <button className={`btn-hover btn-success ${!currentSong ? 'btn-disabled' : ''}`} onClick={handleSaveCurrentMoment} disabled={!currentSong} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '15px' }}>⚡ {t.saveMoment}</button>
           </div>
           <div className="input-group">
-            <input type="number" min="0" placeholder={t.manualTime} value={manualTime} onChange={e => setManualTime(e.target.value)} className="input-default" style={{ width: '25%' }} disabled={!currentSong} />
-            <input type="text" placeholder={t.momentLabel} value={manualLabel} onChange={e => setManualLabel(e.target.value)} className="input-default" style={{ width: '60%' }} disabled={!currentSong} />
+            <input type="text" placeholder={t.manualTime} value={manualTime} onChange={e => setManualTime(e.target.value)} className="input-default" style={{ width: '30%' }} disabled={!currentSong} />
+            <input type="text" placeholder={t.momentLabel} value={manualLabel} onChange={e => setManualLabel(e.target.value)} className="input-default" style={{ width: '55%' }} disabled={!currentSong} />
             <button className={`btn-hover btn-success ${!currentSong ? 'btn-disabled' : ''}`} onClick={handleSaveManualMoment} disabled={!currentSong} style={{ width: '15%', fontSize: '18px' }}>+</button>
           </div>
           <div className="list-container">
