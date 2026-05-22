@@ -1,0 +1,1 @@
+export type CurrentSongType = { id: string, title: string } | null;
