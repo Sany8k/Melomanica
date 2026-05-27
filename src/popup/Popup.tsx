@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './Popup.css';
 import Header from './components/Header';
 import StudioSound from './components/StudioSound';
@@ -7,12 +7,43 @@ import Bookmarks from './components/Bookmarks';
 import EqControls from './components/EqControls';
 import LooperControls from './components/LooperControls';
 import { useAppContext } from './utils/AppContext';
+import { usePlayerStore } from './store/usePlayerStore';
 
 export const Popup = () => {
-  const { t } = useAppContext();
+  const { t, setLang, setCurrentSong } = useAppContext();
+
+  const setPlayerState = usePlayerStore.setState;
   
   const [view, setView] = useState<'main' | 'advanced'>('main');
   const [advTab, setAdvTab] = useState<'eq' | 'looper'>('eq');
+
+  useEffect(() => {
+    chrome.storage.local.get(['lang', 'isFilterOn', 'eqBands'], (data) => {
+      if (data.lang) setLang(data.lang);
+
+      setPlayerState({
+        isFilterOn: data.isFilterOn !== undefined ? data.isFilterOn : true,
+        eqBands: data.eqBands || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      });
+    });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'GET_SYNC_DATA' }, (response) => {
+          if (!chrome.runtime.lastError && response) {
+
+            if (response.song && response.song.videoId) {
+              setCurrentSong({ id: response.song.videoId, title: response.song.title });
+            }
+            
+            if (response.looper) {
+              setPlayerState({ looperState: response.looper });
+            }
+          }
+        });
+      }
+    });
+  }, [setLang, setCurrentSong, setPlayerState]);
 
   return (
     <div className={`popup-container ${view === 'advanced' ? 'wide' : ''}`}>

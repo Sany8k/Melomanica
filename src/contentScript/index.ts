@@ -1,3 +1,5 @@
+import { throttle } from "./utils/throttle";
+
 let videoElement: HTMLVideoElement | null = null;
 let audioContext: AudioContext | null = null;
 let sourceNode: MediaElementAudioSourceNode | null = null;
@@ -91,7 +93,36 @@ function resetLooper() {
   }
 }
 
+// --- Выделенная логика проверки правил для Throttle ---
+const checkPlaybackRules = (currentTime: number, videoId: string) => {
+  // Логика лупера
+  if (loopStart !== null && loopEnd !== null && currentTime >= loopEnd) {
+    isSkipping = true;
+    videoElement!.currentTime = loopStart;
+    setTimeout(() => { isSkipping = false; }, 100);
+    return; // Выходим, чтобы не конфликтовать со скипами
+  }
+
+  // Логика скипов
+  if (skipRules[videoId] && skipRules[videoId].intervals) {
+    skipRules[videoId].intervals.forEach(rule => {
+      if (currentTime >= rule.start && currentTime < rule.end) {
+        isSkipping = true;
+        videoElement!.currentTime = rule.end + 0.1;
+        setTimeout(() => { isSkipping = false; }, 1000);
+      }
+    });
+  }
+};
+
+// Оборачиваем проверку в throttle (лимит 250 мс)
+const throttledSkipCheck = throttle(checkPlaybackRules, 250);
+
 function initAudio(element: HTMLVideoElement) {
+  // 1. ОПТИМИЗАЦИЯ ПАМЯТИ: Защита от повторной инициализации
+  if (element.dataset.audioInitialized === 'true') return;
+  element.dataset.audioInitialized = 'true';
+
   if (videoElement === element) return;
   videoElement = element;
 
@@ -136,31 +167,19 @@ function initAudio(element: HTMLVideoElement) {
     }
 
     const currentTime = videoElement.currentTime;
-
-    // --- ЛОГИКА ЛУПЕРА ---
-    if (loopStart !== null && loopEnd !== null && currentTime >= loopEnd) {
-      isSkipping = true;
-      videoElement.currentTime = loopStart;
-      setTimeout(() => { isSkipping = false; }, 100);
-      return; // Выходим, чтобы не конфликтовать со скипами
-    }
-
-    // --- ЛОГИКА СКИПОВ ---
-    if (skipRules[videoId] && skipRules[videoId].intervals) {
-      skipRules[videoId].intervals.forEach(rule => {
-        if (currentTime >= rule.start && currentTime < rule.end) {
-          isSkipping = true;
-          videoElement!.currentTime = rule.end + 0.1; 
-          setTimeout(() => { isSkipping = false; }, 1000);
-        }
-      });
-    }
+    
+    // 3. ОПТИМИЗАЦИЯ CPU: Используем throttled функцию вместо прямого вызова
+    throttledSkipCheck(currentTime, videoId);
   });
 }
 
 const observer = new MutationObserver(() => {
   const element = document.querySelector('video');
-  if (element) initAudio(element);
+  if (element) {
+    initAudio(element);
+    // 2. ОПТИМИЗАЦИЯ DOM: Отключаем observer, как только нашли video
+    observer.disconnect(); 
+  }
 });
 
 if (target) observer.observe(target, config);
@@ -212,6 +231,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     (videoElement as any).mozPreservesPitch = preservesPitch;
     (videoElement as any).webkitPreservesPitch = preservesPitch;
     sendResponse({ status: 'ok' });
+  }
+  if (message.action === 'GET_SYNC_DATA') {
+    const videoId = getActiveVideoId();
+    const titleNode = document.querySelector('ytmusic-player-bar yt-formatted-string.title');
+    const title = titleNode ? titleNode.textContent : 'Неизвестный трек';
+    
+    sendResponse({ 
+      song: { videoId, title },
+      looper: { start: loopStart, end: loopEnd, speed: playbackSpeed, pitch: preservesPitch }
+    });
   }
   return true;
 });

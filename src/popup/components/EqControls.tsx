@@ -1,8 +1,12 @@
 import React from 'react'
 import { useAppContext } from '../utils/AppContext'
+import { usePlayerStore } from '../store/usePlayerStore';
 
 export default function EqControls() {
-  const { t, resetEq, eqBands, handleEqChange } = useAppContext();
+  const { t } = useAppContext();
+  const eqBands = usePlayerStore(state => state.eqBands);
+  const handleEqChange = usePlayerStore(state => state.handleEqChange);
+  const resetEq = usePlayerStore(state => state.resetEq);
 
   return (
     <>

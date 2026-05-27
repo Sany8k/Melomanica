@@ -1,9 +1,16 @@
 import React from 'react'
 import { useAppContext } from '../utils/AppContext';
 import { formatTime } from '../utils/formatTime';
+import { usePlayerStore } from '../store/usePlayerStore';
 
 export default function LooperControls() {
-  const { t, looperState, setLooperState, handleSetA, handleSetB, handleResetLooper, handleConfigChange, currentSong } = useAppContext();
+  const { t, currentSong } = useAppContext();
+
+  const looperState = usePlayerStore(state => state.looperState);
+  const handleSetA = usePlayerStore(state => state.handleSetA);
+  const handleSetB = usePlayerStore(state => state.handleSetB);
+  const handleResetLooper = usePlayerStore(state => state.handleResetLooper);
+  const handleConfigChange = usePlayerStore(state => state.handleConfigChange);
 
   return (
     <>
@@ -16,11 +23,13 @@ export default function LooperControls() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
           <button className={`btn-hover btn-primary ${!currentSong ? 'btn-disabled' : ''}`} onClick={handleSetA} disabled={!currentSong} style={{ flex: 1, padding: '15px 0' }}>
             <div style={{ fontSize: '12px', fontWeight: 'normal', marginBottom: '5px' }}>{t.loopStartBtn}</div>
-            <div style={{ fontSize: '18px' }}>{formatTime(looperState.start)}</div>
+            {/* ✅ ИСПРАВЛЕНО: Добавлен второй аргумент t.notSet */}
+            <div style={{ fontSize: '18px' }}>{formatTime(looperState.start, t.notSet)}</div>
           </button>
           <button className={`btn-hover btn-success ${!currentSong ? 'btn-disabled' : ''}`} onClick={handleSetB} disabled={!currentSong} style={{ flex: 1, padding: '15px 0' }}>
             <div style={{ fontSize: '12px', fontWeight: 'normal', marginBottom: '5px' }}>{t.loopEndBtn}</div>
-            <div style={{ fontSize: '18px' }}>{formatTime(looperState.end)}</div>
+            {/* ✅ ИСПРАВЛЕНО: Добавлен второй аргумент t.notSet */}
+            <div style={{ fontSize: '18px' }}>{formatTime(looperState.end, t.notSet)}</div>
           </button>
         </div>
 
