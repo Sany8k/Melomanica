@@ -1,15 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Цветовая палитра из референсов */
-  --bg-dark: #0a0514; /* Очень глубокий фиолетово-черный */
-  --bg-card: rgba(30, 20, 55, 0.4); /* Полупрозрачное стекло */
+
+  --bg-dark: #0a0514;
+  --bg-card: rgba(30, 20, 55, 0.4);
   --border-card: rgba(255, 255, 255, 0.08);
   
   --text-main: #ffffff;
   --text-muted: #8e8e93;
   
-  /* Неоновые акценты */
   --neon-purple: #8b31ff;
   --neon-pink: #ff2a85;
   --neon-orange: #ff6b00;
@@ -18,7 +17,6 @@
   --danger: #ff453a;
 }
 
-/* --- БАЗОВЫЕ НАСТРОЙКИ --- */
 body {
   margin: 0;
   padding: 0;
@@ -27,7 +25,7 @@ body {
     radial-gradient(circle at 100% 0%, rgba(139, 49, 255, 0.15) 0%, transparent 50%),
     radial-gradient(circle at 0% 100%, rgba(255, 42, 133, 0.1) 0%, transparent 50%);
   color: var(--text-main);
-  font-family: 'Outfit', sans-serif; /* 👈 Новый красивый шрифт */
+  font-family: 'Outfit', sans-serif;
   overflow-x: hidden;
 }
 
@@ -55,17 +53,16 @@ hr.divider {
   margin: 16px 0;
 }
 
-/* --- СТЕКЛЯННЫЕ КАРТОЧКИ (Glassmorphism) --- */
 .section-card {
-  background: rgba(30, 20, 55, 0.6); /* Было 0.4, сделали плотнее */
+  background: rgba(30, 20, 55, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12); /* Выделили рамку */
-  border-top: 1px solid rgba(255, 255, 255, 0.2); /* Имитация света сверху стекла */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
   padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); /* Усилили тень */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .flex-between {
@@ -87,7 +84,6 @@ hr.divider {
   color: var(--text-muted);
 }
 
-/* --- КНОПКИ (Pill-shaped, как на макетах) --- */
 button {
   cursor: pointer;
   border: none;
@@ -96,14 +92,13 @@ button {
 }
 
 .btn-hover {
-  border-radius: 50px; /* Делает кнопку в форме таблетки */
+  border-radius: 50px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: 600;
 }
 
-/* Главная кнопка (фиолетово-розовый градиент) */
 .btn-primary {
   background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
   color: white;
@@ -115,7 +110,6 @@ button {
   transform: translateY(-1px);
 }
 
-/* Кнопка успеха (или вторичный акцент) */
 .btn-success {
   background: rgba(255, 255, 255, 0.1);
   color: white;
@@ -135,7 +129,6 @@ button {
   transform: none !important;
 }
 
-/* --- ПОЛЯ ВВОДА --- */
 .input-group {
   display: flex;
   gap: 8px;
@@ -145,7 +138,7 @@ button {
 .input-default {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--border-card);
-  border-radius: 20px; /* Скругленные края */
+  border-radius: 20px;
   padding: 8px 12px;
   color: white;
   font-size: 12px;
@@ -158,7 +151,6 @@ button {
   box-shadow: 0 0 8px rgba(139, 49, 255, 0.3);
 }
 
-/* --- ТУМБЛЕРЫ (Toggle switch) --- */
 .toggle-bg {
   width: 44px;
   height: 24px;
@@ -193,7 +185,6 @@ button {
   transform: translateX(20px);
 }
 
-/* --- ЭКВАЛАЙЗЕР И СКОРОСТЬ (Ползунки) --- */
 input[type=range] {
   -webkit-appearance: none;
   background: transparent;
@@ -203,7 +194,6 @@ input[type=range]:focus {
   outline: none;
 }
 
-/* Дорожка */
 input[type=range]::-webkit-slider-runnable-track {
   width: 100%;
   height: 4px;
@@ -211,7 +201,6 @@ input[type=range]::-webkit-slider-runnable-track {
   border-radius: 2px;
 }
 
-/* Сам ползунок */
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   height: 16px;
@@ -232,12 +221,11 @@ input[type=range]::-webkit-slider-thumb:active {
   box-shadow: 0 0 15px var(--neon-pink);
 }
 
-/* Вертикальный эквалайзер */
 .eq-panel {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* 👈 Прижимаем все колонки к верхнему краю */
-  min-height: 260px; /* 👈 Используем min-height вместо жесткой высоты, чтобы длинный текст помещался */
+  align-items: flex-start;
+  min-height: 260px;
   background: rgba(30, 20, 55, 0.6);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -249,8 +237,8 @@ input[type=range]::-webkit-slider-thumb:active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* 👈 Строим элементы строго сверху вниз */
-  width: 32px; /* Чуть расширили колонку для текста */
+  justify-content: flex-start;
+  width: 32px;
 }
 
 .eq-freq {
@@ -267,7 +255,6 @@ input[type=range]::-webkit-slider-thumb:active {
   margin-top: 4px;
 }
 
-/* Поворачиваем горизонтальный ползунок вертикально */
 .eq-slider {
   -webkit-appearance: none;
   width: 130px; 
@@ -275,12 +262,10 @@ input[type=range]::-webkit-slider-thumb:active {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   transform: rotate(-90deg); 
-  /* 👇 Жестко фиксируем отступы. Теперь ползунок всегда на одном месте по вертикали */
   margin: 65px -50px; 
   outline: none;
 }
 
-/* Светящаяся точка ползунка */
 .eq-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   height: 16px;
@@ -310,7 +295,6 @@ input[type=range]::-webkit-slider-thumb:active {
   word-wrap: break-word;
 }
 
-/* --- HEADER --- */
 .header-wrapper {
   display: flex;
   justify-content: space-between;
@@ -356,7 +340,6 @@ input[type=range]::-webkit-slider-thumb:active {
   font-weight: bold;
 }
 
-/* --- БЛОК ТЕКУЩЕГО ТРЕКА --- */
 .track-info-card {
   background: linear-gradient(180deg, rgba(30,20,55,0.8) 0%, rgba(10,5,20,0.9) 100%);
   border: 1px solid var(--border-card);
@@ -382,7 +365,6 @@ input[type=range]::-webkit-slider-thumb:active {
   text-overflow: ellipsis;
 }
 
-/* --- СПИСКИ (Закладки и скипы) --- */
 .list-container {
   display: flex;
   flex-direction: column;
@@ -392,7 +374,6 @@ input[type=range]::-webkit-slider-thumb:active {
   padding-right: 4px;
 }
 
-/* Кастомный скроллбар */
 .list-container::-webkit-scrollbar {
   width: 4px;
 }
@@ -409,7 +390,7 @@ input[type=range]::-webkit-slider-thumb:active {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(0, 0, 0, 0.2); /* Темный фон для контраста с карточкой */
+  background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 10px 12px;
@@ -443,7 +424,6 @@ input[type=range]::-webkit-slider-thumb:active {
   transform: scale(1.1);
 }
 
-/* --- БОКОВОЕ МЕНЮ (Advanced view) --- */
 .adv-layout {
   display: flex;
   gap: 16px;
@@ -482,7 +462,6 @@ input[type=range]::-webkit-slider-thumb:active {
   flex: 1;
 }
 
-/* Прозрачные кнопки-иконки для редактирования */
 .icon-btn {
   background: transparent;
   border: none;
@@ -507,8 +486,28 @@ input[type=range]::-webkit-slider-thumb:active {
   color: var(--success);
 }
 
-/* Заставляем текст в кнопках лупера становиться друг под другом */
 .btn-primary, .btn-success {
   flex-direction: column;
   gap: 2px;
+}
+
+.padding-sm { padding: 4px 8px; }
+.font-sm { font-size: 11px; }
+
+.padding-md { padding: 8px 16px; }
+.font-md { font-size: 12px; }
+
+.padding-lg { padding: 15px 0; }
+.font-lg { font-size: 14px; }
+
+.w-full { width: 100%; flex: 1; }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-card);
+  color: var(--danger);
+}
+.btn-outline:hover:not(:disabled) {
+  background: rgba(255, 69, 58, 0.1);
+  border-color: var(--danger);
 }

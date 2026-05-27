@@ -1,7 +1,9 @@
-import React from 'react'
+import React from 'react';
 import { useAppContext } from '../utils/AppContext';
 import { formatTime } from '../utils/formatTime';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 export default function LooperControls() {
   const { t, currentSong } = useAppContext();
@@ -17,20 +19,18 @@ export default function LooperControls() {
       <div className="animated-item" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <div className="flex-between" style={{ marginBottom: '20px' }}>
           <h3 style={{ margin: 0, fontSize: '16px' }}>A-B Looper</h3>
-          <button className="btn-hover" onClick={handleResetLooper} style={{ background: 'none', border: '1px solid #48484a', color: '#ff453a', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}>{t.loopReset}</button>
+          <Button variant="outline" size="sm" onClick={handleResetLooper}>{t.loopReset}</Button>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-          <button className={`btn-hover btn-primary ${!currentSong ? 'btn-disabled' : ''}`} onClick={handleSetA} disabled={!currentSong} style={{ flex: 1, padding: '15px 0' }}>
+          <Button variant="primary" size="lg" fullWidth disabled={!currentSong} onClick={handleSetA}>
             <div style={{ fontSize: '12px', fontWeight: 'normal', marginBottom: '5px' }}>{t.loopStartBtn}</div>
-            {/* ✅ ИСПРАВЛЕНО: Добавлен второй аргумент t.notSet */}
             <div style={{ fontSize: '18px' }}>{formatTime(looperState.start, t.notSet)}</div>
-          </button>
-          <button className={`btn-hover btn-success ${!currentSong ? 'btn-disabled' : ''}`} onClick={handleSetB} disabled={!currentSong} style={{ flex: 1, padding: '15px 0' }}>
+          </Button>
+          <Button variant="success" size="lg" fullWidth disabled={!currentSong} onClick={handleSetB}>
             <div style={{ fontSize: '12px', fontWeight: 'normal', marginBottom: '5px' }}>{t.loopEndBtn}</div>
-            {/* ✅ ИСПРАВЛЕНО: Добавлен второй аргумент t.notSet */}
             <div style={{ fontSize: '18px' }}>{formatTime(looperState.end, t.notSet)}</div>
-          </button>
+          </Button>
         </div>
 
         <hr className="divider" style={{ margin: '10px 0 20px 0' }} />
@@ -56,7 +56,7 @@ export default function LooperControls() {
           </div>
         </div>
 
-        <div className="section-card flex-between" style={{ padding: '10px 15px', marginBottom: 0 }}>
+        <Card className="flex-between" style={{ padding: '10px 15px', marginBottom: 0 }}>
           <div>
             <h3 className="section-title">{t.pitchToggle}</h3>
             <p className="section-desc">{t.pitchDesc}</p>
@@ -64,7 +64,7 @@ export default function LooperControls() {
           <div className={`toggle-bg ${looperState.pitch ? 'on' : 'off'}`} onClick={() => handleConfigChange(looperState.speed, !looperState.pitch)}>
             <div className="toggle-circle" />
           </div>
-        </div>
+        </Card>
 
       </div>
     </>

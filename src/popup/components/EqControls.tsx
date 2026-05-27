@@ -1,6 +1,7 @@
-import React from 'react'
-import { useAppContext } from '../utils/AppContext'
+import React from 'react';
+import { useAppContext } from '../utils/AppContext';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { Button } from './ui/Button';
 
 export default function EqControls() {
   const { t } = useAppContext();
@@ -13,7 +14,7 @@ export default function EqControls() {
       <div className="animated-item" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <div className="flex-between" style={{ marginBottom: '20px' }}>
           <h3 style={{ margin: 0, fontSize: '16px' }}>{t.eqTitle}</h3>
-          <button className="btn-hover" onClick={resetEq} style={{ background: 'none', border: '1px solid #48484a', color: '#ff453a', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}>{t.eqReset}</button>
+          <Button variant="outline" size="sm" onClick={resetEq}>{t.eqReset}</Button>
         </div>
         <div className="eq-panel">
           {t.bands.map((band, i) => (
