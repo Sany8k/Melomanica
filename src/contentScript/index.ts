@@ -1,5 +1,3 @@
-import { throttle } from "./utils/throttle";
-
 let videoElement: HTMLVideoElement | null = null;
 let audioContext: AudioContext | null = null;
 let sourceNode: MediaElementAudioSourceNode | null = null;
@@ -13,18 +11,20 @@ let isNormalized = true;
 let isSkipping = false;
 let currentEqBands = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-// --- 🔄 СОСТОЯНИЕ ЛУПЕРА (Временное, сбрасывается при смене трека) ---
+// --- СОСТОЯНИЕ ПЛЕЕРА ---
 let currentVideoId: string | null = null;
 let loopStart: number | null = null;
 let loopEnd: number | null = null;
 let playbackSpeed = 1.0;
 let preservesPitch = true;
+let activeSkipTimers: number[] = [];
 
 const target: HTMLElement | null = document.body;
 const config = { childList: true, subtree: true };
 
 let skipRules: Record<string, { title: string, intervals: { start: number; end: number }[] }> = {};
 
+// --- ИНИЦИАЛИЗАЦИЯ ДАННЫХ ---
 chrome.storage.local.get(['skipRules', 'eqBands'], (result) => {
   if (result.skipRules) skipRules = result.skipRules;
   if (result.eqBands) currentEqBands = result.eqBands;
@@ -32,7 +32,11 @@ chrome.storage.local.get(['skipRules', 'eqBands'], (result) => {
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local') {
-    if (changes.skipRules) skipRules = changes.skipRules.newValue || {};
+    if (changes.skipRules) {
+      skipRules = changes.skipRules.newValue || {};
+      // Мгновенно применяем новые правила, если трек сейчас играет
+      if (currentVideoId) scheduleSkipsForTrack(currentVideoId);
+    }
     if (changes.eqBands) {
       currentEqBands = changes.eqBands.newValue;
       currentEqBands.forEach((val, i) => {
@@ -42,6 +46,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   }
 });
 
+// --- AUDIO GRAPH (WEB AUDIO API) ---
 function buildAudioChain() {
   if (!sourceNode || !audioContext || eqNodes.length === 0) return;
   sourceNode.disconnect(); preGainNode?.disconnect(); compressorNode?.disconnect(); eqNodes.forEach(n => n.disconnect());
@@ -61,6 +66,7 @@ function toggleEffect() {
   buildAudioChain();
 }
 
+// --- ПАРСЕРЫ DOM ---
 function getActiveVideoId(): string | null {
   const urlId = new URLSearchParams(window.location.search).get('v');
   if (urlId) return urlId;
@@ -71,15 +77,22 @@ function getActiveVideoId(): string | null {
     const match = ytpLink.getAttribute('href')?.match(/v=([a-zA-Z0-9_-]{11})/);
     if (match) return match[1];
   }
-  const anyPlayerLink = document.querySelector('ytmusic-player-bar a[href*="watch?v="]');
-  if (anyPlayerLink) {
-    const match = anyPlayerLink.getAttribute('href')?.match(/v=([a-zA-Z0-9_-]{11})/);
-    if (match) return match[1];
-  }
   return null;
 }
 
-// 🛠 СБРОС ЛУПЕРА (Вызывается при смене трека или из попапа)
+function getActiveTrackTitle(): string {
+  // YTM Selector
+  const ytMusicTitleNode = document.querySelector('ytmusic-player-bar yt-formatted-string.title');
+  if (ytMusicTitleNode && ytMusicTitleNode.textContent) return ytMusicTitleNode.textContent;
+
+  // YT Selector
+  const ytTitleNode = document.querySelector('h1.ytd-watch-metadata yt-formatted-string');
+  if (ytTitleNode && ytTitleNode.textContent) return ytTitleNode.textContent;
+
+  return 'Неизвестный трек';
+}
+
+// --- ЛОГИКА ПЛЕЕРА ---
 function resetLooper() {
   loopStart = null;
   loopEnd = null;
@@ -93,33 +106,34 @@ function resetLooper() {
   }
 }
 
-// --- Выделенная логика проверки правил для Throttle ---
-const checkPlaybackRules = (currentTime: number, videoId: string) => {
-  // Логика лупера
-  if (loopStart !== null && loopEnd !== null && currentTime >= loopEnd) {
-    isSkipping = true;
-    videoElement!.currentTime = loopStart;
-    setTimeout(() => { isSkipping = false; }, 100);
-    return; // Выходим, чтобы не конфликтовать со скипами
-  }
+function clearSkipMemory() {
+  activeSkipTimers.forEach(clearTimeout);
+  activeSkipTimers = [];
+}
 
-  // Логика скипов
-  if (skipRules[videoId] && skipRules[videoId].intervals) {
-    skipRules[videoId].intervals.forEach(rule => {
-      if (currentTime >= rule.start && currentTime < rule.end) {
+function scheduleSkipsForTrack(videoId: string) {
+  clearSkipMemory();
+
+  const trackRules = skipRules[videoId];
+  if (!trackRules || !trackRules.intervals || !videoElement) return;
+
+  trackRules.intervals.forEach(rule => {
+    const delayInMs = (rule.start - videoElement!.currentTime) * 1000;
+    
+    if (delayInMs > 0) {
+      const timerId = window.setTimeout(() => {
+        if (!videoElement) return;
         isSkipping = true;
-        videoElement!.currentTime = rule.end + 0.1;
-        setTimeout(() => { isSkipping = false; }, 1000);
-      }
-    });
-  }
-};
-
-// Оборачиваем проверку в throttle (лимит 250 мс)
-const throttledSkipCheck = throttle(checkPlaybackRules, 250);
+        videoElement.currentTime = rule.end + 0.1;
+        setTimeout(() => { isSkipping = false; }, 500); 
+      }, delayInMs);
+      
+      activeSkipTimers.push(timerId);
+    }
+  });
+}
 
 function initAudio(element: HTMLVideoElement) {
-  // 1. ОПТИМИЗАЦИЯ ПАМЯТИ: Защита от повторной инициализации
   if (element.dataset.audioInitialized === 'true') return;
   element.dataset.audioInitialized = 'true';
 
@@ -150,49 +164,60 @@ function initAudio(element: HTMLVideoElement) {
       eqNodes.push(node);
     });
   }
+  
   chrome.storage.local.get(['isFilterOn'], (data) => {
     isNormalized = data.isFilterOn !== undefined ? data.isFilterOn : true;
     buildAudioChain();
   });
 
-  videoElement.addEventListener('timeupdate', () => {
-    if (isSkipping) return;
+  const handlePlaybackChange = () => {
     const videoId = getActiveVideoId();
     if (!videoId || !videoElement) return;
 
-    // Сброс лупера при смене трека
     if (currentVideoId !== videoId) {
       currentVideoId = videoId;
       resetLooper();
     }
-
-    const currentTime = videoElement.currentTime;
     
-    // 3. ОПТИМИЗАЦИЯ CPU: Используем throttled функцию вместо прямого вызова
-    throttledSkipCheck(currentTime, videoId);
+    scheduleSkipsForTrack(videoId);
+  };
+
+  videoElement.addEventListener('play', handlePlaybackChange);
+  videoElement.addEventListener('seeked', handlePlaybackChange);
+
+  // timeupdate теперь отвечает ТОЛЬКО за лупер (минимальная нагрузка)
+  videoElement.addEventListener('timeupdate', () => {
+    if (isSkipping || !videoElement) return;
+    
+    if (loopStart !== null && loopEnd !== null && videoElement.currentTime >= loopEnd) {
+      isSkipping = true;
+      videoElement.currentTime = loopStart;
+      setTimeout(() => { isSkipping = false; }, 100);
+    }
   });
 }
 
+// --- УМНЫЙ ЗАПУСК ---
 const observer = new MutationObserver(() => {
   const element = document.querySelector('video');
   if (element) {
     initAudio(element);
-    // 2. ОПТИМИЗАЦИЯ DOM: Отключаем observer, как только нашли video
     observer.disconnect(); 
   }
 });
 
 if (target) observer.observe(target, config);
 
+const existingMedia = document.querySelector('video');
+if (existingMedia) initAudio(existingMedia);
+
+// --- ОБРАБОТЧИКИ СООБЩЕНИЙ (API) ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'toggle') {
     toggleEffect(); sendResponse({ status: 'ok' });
   }
   if (message.action === 'GET_CURRENT_SONG') {
-    const videoId = getActiveVideoId();
-    const titleNode = document.querySelector('ytmusic-player-bar yt-formatted-string.title');
-    const title = titleNode ? titleNode.textContent : 'Неизвестный трек';
-    sendResponse({ videoId, title });
+    sendResponse({ videoId: getActiveVideoId(), title: getActiveTrackTitle() });
   }
   if (message.action === 'GET_CURRENT_TIME') {
     sendResponse({ currentTime: videoElement ? videoElement.currentTime : 0 });
@@ -204,14 +229,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     setTimeout(() => { isSkipping = false; }, 1000);
     sendResponse({ status: 'ok' });
   }
-
-  // --- API ЛУПЕРА ---
   if (message.action === 'GET_LOOPER_STATE') {
     sendResponse({ start: loopStart, end: loopEnd, speed: playbackSpeed, pitch: preservesPitch });
   }
   if (message.action === 'SET_LOOP_A' && videoElement) {
     loopStart = videoElement.currentTime;
-    if (loopEnd !== null && loopStart >= loopEnd) loopEnd = null; // Защита от старт > конец
+    if (loopEnd !== null && loopStart >= loopEnd) loopEnd = null;
     sendResponse({ start: loopStart, end: loopEnd });
   }
   if (message.action === 'SET_LOOP_B' && videoElement) {
@@ -233,12 +256,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ status: 'ok' });
   }
   if (message.action === 'GET_SYNC_DATA') {
-    const videoId = getActiveVideoId();
-    const titleNode = document.querySelector('ytmusic-player-bar yt-formatted-string.title');
-    const title = titleNode ? titleNode.textContent : 'Неизвестный трек';
-    
-    sendResponse({ 
-      song: { videoId, title },
+    sendResponse({
+      song: { videoId: getActiveVideoId(), title: getActiveTrackTitle() },
       looper: { start: loopStart, end: loopEnd, speed: playbackSpeed, pitch: preservesPitch }
     });
   }

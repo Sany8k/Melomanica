@@ -21,7 +21,8 @@ export default defineManifest({
   },
   content_scripts: [
     {
-     "matches": ["<all_urls>"],
+      "matches": ["*://music.youtube.com/*",
+        "*://www.youtube.com/*"],
       js: ['src/contentScript/index.ts'],
     },
   ],
@@ -32,8 +33,13 @@ export default defineManifest({
     },
   ],
   "permissions": [
-  "storage",
-  "activeTab",
-  "scripting"
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  host_permissions: [
+    "*://music.youtube.com/*",
+    "*://www.youtube.com/*",
+    "http://localhost:5173/*",
   ],
 })
