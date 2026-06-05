@@ -1,9 +1,18 @@
 import { create } from 'zustand';
-import { Lang } from '../types/Lang';
+
+export const EQ_PRESETS: Record<string, number[]> = {
+  'Flat': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  'Bass Boost': [6, 5, 4, 2, 0, 0, 0, 0, 0, 0],
+  'Rock': [5, 4, 3, -1, -2, -1, 2, 3, 4, 5],
+  'Vocal': [-2, -1, 0, 2, 4, 4, 2, 0, -1, -2],
+  'Electronic': [4, 3, 1, -2, -3, 0, 1, 3, 4, 5],
+};
 
 interface PlayerState {
   isFilterOn: boolean;
   eqBands: number[];
+  activePreset: string;
+  customEqBands: number[];
   looperState: {
     start: number | null;
     end: number | null;
@@ -13,6 +22,7 @@ interface PlayerState {
   
   toggleAudioFilter: () => Promise<void>;
   handleEqChange: (index: number, value: string) => void;
+  applyPreset: (name: string) => void;
   resetEq: () => void;
   handleSetA: () => void;
   handleSetB: () => void;
@@ -23,6 +33,8 @@ interface PlayerState {
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   isFilterOn: true,
   eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  activePreset: 'Flat',
+  customEqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   looperState: { start: null, end: null, speed: 1.0, pitch: true },
 
   toggleAudioFilter: async () => {
@@ -41,14 +53,29 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const newBands = [...currentBands];
     newBands[index] = Number(value);
 
-    set({ eqBands: newBands });
-    chrome.storage.local.set({ eqBands: newBands });
+    set({ eqBands: newBands, activePreset: 'Custom', customEqBands: newBands });
+    chrome.storage.local.set({ eqBands: newBands, activePreset: 'Custom', customEqBands: newBands });
+  },
+
+  applyPreset: (name: string) => {
+    let newBands: number[];
+    
+    if (name === 'Custom') {
+      newBands = [...get().customEqBands];
+    } else if (EQ_PRESETS[name]) {
+      newBands = [...EQ_PRESETS[name]];
+    } else {
+      return;
+    }
+
+    set({ eqBands: newBands, activePreset: name });
+    chrome.storage.local.set({ eqBands: newBands, activePreset: name });
   },
 
   resetEq: () => {
-    const empty = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    set({ eqBands: empty });
-    chrome.storage.local.set({ eqBands: empty });
+    const empty = [...EQ_PRESETS['Flat']];
+    set({ eqBands: empty, activePreset: 'Flat' });
+    chrome.storage.local.set({ eqBands: empty, activePreset: 'Flat' });
   },
 
   handleSetA: () => {
