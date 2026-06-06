@@ -7,7 +7,6 @@
     "types": ["chrome"],
     "skipLibCheck": true,
     "esModuleInterop": false,
-    "ignoreDeprecations": "6.0",
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
