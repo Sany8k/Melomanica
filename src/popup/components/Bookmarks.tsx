@@ -3,6 +3,7 @@ import { useAppContext } from '../utils/AppContext';
 import { parseTimeToSeconds } from '../utils/time';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import './Bookmarks.css';
 
 export default function Bookmarks() {
   const { t, currentSong } = useAppContext();
@@ -18,7 +19,7 @@ export default function Bookmarks() {
     const newFavs = { ...favorites };
     const videoId = currentSong.id;
     if (!newFavs[videoId]) newFavs[videoId] = { title: currentSong.title, moments: [] };
-    newFavs[videoId].moments.push({ time, label: customLabel.trim() || `Момент ${newFavs[videoId].moments.length + 1}` });
+    newFavs[videoId].moments.push({ time, label: customLabel.trim() || `Moment ${newFavs[videoId].moments.length + 1}` });
     newFavs[videoId].moments.sort((a, b) => a.time - b.time);
     setFavorites(newFavs);
     chrome.storage.local.set({ favorites: newFavs });

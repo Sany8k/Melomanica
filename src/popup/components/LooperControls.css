@@ -1,0 +1,86 @@
+.looper-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.looper-header {
+  margin-bottom: 20px;
+}
+
+.looper-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.looper-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.looper-btn-label {
+  font-size: 12px;
+  font-weight: normal;
+  margin-bottom: 5px;
+}
+
+.looper-btn-time {
+  font-size: 18px;
+}
+
+.looper-divider {
+  margin: 10px 0 20px 0;
+}
+
+.speed-section {
+  margin-bottom: 20px;
+}
+
+.speed-header {
+  margin-bottom: 10px;
+}
+
+.speed-title {
+  margin: 0;
+  font-size: 14px;
+}
+
+.speed-value {
+  font-size: 14px;
+  color: #0a84ff;
+  font-weight: bold;
+}
+
+.speed-slider {
+  width: 100%;
+}
+
+.speed-labels {
+  position: relative;
+  height: 15px;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.speed-label-left {
+  position: absolute;
+  left: 0;
+}
+
+.speed-label-center {
+  position: absolute;
+  left: 27.27%;
+  transform: translateX(-50%);
+}
+
+.speed-label-right {
+  position: absolute;
+  right: 0;
+}
+
+.pitch-card {
+  padding: 10px 15px;
+  margin-bottom: 0;
+}

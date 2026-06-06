@@ -4,6 +4,7 @@ import { formatTime } from '../utils/formatTime';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
+import './LooperControls.css';
 
 export default function LooperControls() {
   const { t, currentSong } = useAppContext();
@@ -16,47 +17,49 @@ export default function LooperControls() {
 
   return (
     <>
-      <div className="animated-item" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <div className="flex-between" style={{ marginBottom: '20px' }}>
-          <h3 style={{ margin: 0, fontSize: '16px' }}>A-B Looper</h3>
+      <div className="animated-item looper-container">
+        <div className="flex-between looper-header">
+          <h3 className="looper-title">A-B Looper</h3>
           <Button variant="outline" size="sm" onClick={handleResetLooper}>{t.loopReset}</Button>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <div className="looper-buttons">
           <Button variant="primary" size="lg" fullWidth disabled={!currentSong} onClick={handleSetA}>
-            <div style={{ fontSize: '12px', fontWeight: 'normal', marginBottom: '5px' }}>{t.loopStartBtn}</div>
-            <div style={{ fontSize: '18px' }}>{formatTime(looperState.start, t.notSet)}</div>
+            <div className="looper-btn-label">{t.loopStartBtn}</div>
+            <div className="looper-btn-time">{formatTime(looperState.start, t.notSet)}</div>
           </Button>
           <Button variant="success" size="lg" fullWidth disabled={!currentSong} onClick={handleSetB}>
-            <div style={{ fontSize: '12px', fontWeight: 'normal', marginBottom: '5px' }}>{t.loopEndBtn}</div>
-            <div style={{ fontSize: '18px' }}>{formatTime(looperState.end, t.notSet)}</div>
+            <div className="looper-btn-label">{t.loopEndBtn}</div>
+            <div className="looper-btn-time">{formatTime(looperState.end, t.notSet)}</div>
           </Button>
         </div>
 
-        <hr className="divider" style={{ margin: '10px 0 20px 0' }} />
+        <hr className="divider looper-divider" />
 
-        <div style={{ marginBottom: '20px' }}>
-          <div className="flex-between" style={{ marginBottom: '10px' }}>
-            <h4 style={{ margin: 0, fontSize: '14px' }}>{t.speed}</h4>
-            <div style={{ fontSize: '14px', color: '#0a84ff', fontWeight: 'bold' }}>{looperState.speed.toFixed(2)}x</div>
+        <div className="speed-section">
+          <div className="flex-between speed-header">
+            <h4 className="speed-title">{t.speed}</h4>
+            <div className="speed-value">{looperState.speed.toFixed(2)}x</div>
           </div>
 
           <input
-            type="range" className="speed-slider" min="0.25" max="3" step="0.05"
+            type="range" 
+            className="speed-slider" 
+            min="0.25" max="3" step="0.05"
             value={looperState.speed}
             onChange={(e) => handleConfigChange(Number(e.target.value), looperState.pitch)}
             disabled={!currentSong}
-            style={{ width: '100%', cursor: currentSong ? 'pointer' : 'not-allowed' }}
+            style={{ cursor: currentSong ? 'pointer' : 'not-allowed' }}
           />
 
-          <div style={{ position: 'relative', height: '15px', fontSize: '10px', color: '#8e8e93', marginTop: '8px' }}>
-            <span style={{ position: 'absolute', left: '0' }}>0.25x</span>
-            <span style={{ position: 'absolute', left: '27.27%', transform: 'translateX(-50%)' }}>1.0x</span>
-            <span style={{ position: 'absolute', right: '0' }}>3.0x</span>
+          <div className="speed-labels">
+            <span className="speed-label-left">0.25x</span>
+            <span className="speed-label-center">1.0x</span>
+            <span className="speed-label-right">3.0x</span>
           </div>
         </div>
 
-        <Card className="flex-between" style={{ padding: '10px 15px', marginBottom: 0 }}>
+        <Card className="flex-between pitch-card">
           <div>
             <h3 className="section-title">{t.pitchToggle}</h3>
             <p className="section-desc">{t.pitchDesc}</p>

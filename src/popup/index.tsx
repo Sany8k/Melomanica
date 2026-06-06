@@ -2,7 +2,6 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Popup } from './Popup'
 import './index.css'
-import './components/components.css';
 import './Popup.css';
 import { AppProvider } from './utils/AppContext'
 

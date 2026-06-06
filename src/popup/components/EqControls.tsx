@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppContext } from '../utils/AppContext';
 import { usePlayerStore, EQ_PRESETS } from '../store/usePlayerStore';
 import { Button } from './ui/Button';
+import './EqControls.css';
 
 export default function EqControls() {
   const { t } = useAppContext();

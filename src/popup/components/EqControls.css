@@ -1,0 +1,74 @@
+/* src/components/EqControls.css */
+.eq-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-height: 260px;
+  background: rgba(30, 20, 55, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 16px 10px;
+}
+
+.eq-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 32px;
+}
+
+.eq-freq {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.eq-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--neon-pink);
+  height: 16px;
+  margin-top: 4px;
+}
+
+.eq-slider {
+  -webkit-appearance: none;
+  width: 130px; 
+  height: 4px;  
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  transform: rotate(-90deg); 
+  margin: 65px -50px; 
+  outline: none;
+}
+
+.eq-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 12px var(--neon-purple);
+  border: 2px solid var(--neon-purple);
+  margin-top: -6px; 
+  transition: transform 0.1s, background 0.2s;
+}
+
+.eq-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: var(--neon-pink);
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 16px var(--neon-pink);
+}
+
+.eq-desc {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+  margin-top: 4px;
+  word-wrap: break-word;
+}

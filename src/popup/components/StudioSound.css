@@ -1,0 +1,33 @@
+.toggle-bg {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.toggle-bg.off {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-card);
+}
+
+.toggle-bg.on {
+  background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink));
+  box-shadow: 0 0 10px rgba(255, 42, 133, 0.4);
+}
+
+.toggle-circle {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toggle-bg.on .toggle-circle {
+  transform: translateX(20px);
+}

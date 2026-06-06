@@ -5,6 +5,7 @@ import { parseTimeToSeconds } from '../utils/time';
 import { formatTime } from '../utils/formatTime';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import './AutoSkip.css'
 
 export default function AutoSkip(): JSX.Element {
   const { t, currentSong } = useAppContext();

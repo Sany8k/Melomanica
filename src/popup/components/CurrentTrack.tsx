@@ -1,5 +1,6 @@
 import React from 'react'
 import { useAppContext } from '../utils/AppContext'
+import './CurrentTrack.css';
 
 export default function CurrentTrack(): JSX.Element {
   const { t, currentSong } = useAppContext();

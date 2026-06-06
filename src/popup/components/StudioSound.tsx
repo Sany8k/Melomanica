@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppContext } from '../utils/AppContext';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { Card } from './ui/Card';
+import './StudioSound.css';
 
 export default function StudioSound() {
   const isFilterOn = usePlayerStore(state => state.isFilterOn);

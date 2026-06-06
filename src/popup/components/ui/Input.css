@@ -1,0 +1,21 @@
+.input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.input-default {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-card);
+  border-radius: 20px;
+  padding: 8px 12px;
+  color: white;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.input-default:focus {
+  border-color: var(--neon-purple);
+  box-shadow: 0 0 8px rgba(139, 49, 255, 0.3);
+}
