@@ -3,8 +3,8 @@
 Melomanica is a high-performance browser extension that enhances your YouTube and YouTube Music audio experience. Built with a focus on zero CPU overhead, it provides advanced audio processing and playback controls directly in your browser.
 
 ## ✨ Features
-![Melomanica Main Interface](src/assets/main.png)
-![Melomanica Equalizer Interface](src/assets/eq.png)
+![Melomanica Main Interface](public/images/main.png)
+![Melomanica Equalizer Interface](public/images/eq.png)
 
 *   **Smart Auto-Skip:** Automatically skips boring parts, intros, or specific segments of songs.
 *   **A-B Looper:** Precisely loop any specific section of a track with custom playback speed and pitch control.
@@ -61,6 +61,14 @@ If you are planning to submit a Pull Request, please adhere to our strict perfor
 
 If you like Melomanica, consider supporting its development:
 *   [Support on Patreon](https://www.patreon.com/posts/support-160332557?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link)
+
+## Privacy Policy for Melomanica
+
+Melomanica operates as a fully local browser extension. 
+
+- **Data Collection:** The extension does not collect, store, or transmit any personal data, browsing history, or user information to external servers.
+- **Data Storage:** User preferences, equalizer presets, and bookmarks are stored strictly locally on the user's device via `chrome.storage.local`.
+- **Third-Party Sharing:** No data is shared with third parties.
 
 ## 📄 License
 
