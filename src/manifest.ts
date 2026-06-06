@@ -10,14 +10,14 @@ export default defineManifest({
   version: packageData.version,
   manifest_version: 3,
   icons: {
-    16: 'img/logo-16.png',
-    32: 'img/logo-32.png',
-    48: 'img/logo-48.png',
-    128: 'img/logo-128.png',
+    16: 'icons/melomanica_logo16.png',
+    32: 'icons/melomanica_logo32.png',
+    48: 'icons/melomanica_logo48.png',
+    128: 'icons/melomanica_logo128.png',
   },
   action: {
     default_popup: 'popup.html',
-    default_icon: 'img/logo-48.png',
+    default_icon: 'icons/melomanica_logo48.png',
   },
   content_scripts: [
     {
@@ -28,7 +28,7 @@ export default defineManifest({
   ],
   web_accessible_resources: [
     {
-      resources: ['img/logo-16.png', 'img/logo-32.png', 'img/logo-48.png', 'img/logo-128.png'],
+      resources: ['icons/melomanica_logo16.png', 'icons/melomanica_logo32.png', 'icons/melomanica_logo48.png', 'icons/melomanica_logo128.png'],
       matches: [],
     },
   ],

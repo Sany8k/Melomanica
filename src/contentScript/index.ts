@@ -11,7 +11,6 @@ let isNormalized = true;
 let isSkipping = false;
 let currentEqBands = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-// --- СОСТОЯНИЕ ПЛЕЕРА ---
 let currentVideoId: string | null = null;
 let loopStart: number | null = null;
 let loopEnd: number | null = null;
@@ -24,7 +23,6 @@ const config = { childList: true, subtree: true };
 
 let skipRules: Record<string, { title: string, intervals: { start: number; end: number }[] }> = {};
 
-// --- ИНИЦИАЛИЗАЦИЯ ДАННЫХ ---
 chrome.storage.local.get(['skipRules', 'eqBands'], (result) => {
   if (result.skipRules) skipRules = result.skipRules;
   if (result.eqBands) currentEqBands = result.eqBands;
@@ -34,7 +32,6 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local') {
     if (changes.skipRules) {
       skipRules = changes.skipRules.newValue || {};
-      // Мгновенно применяем новые правила, если трек сейчас играет
       if (currentVideoId) scheduleSkipsForTrack(currentVideoId);
     }
     if (changes.eqBands) {
@@ -46,7 +43,6 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   }
 });
 
-// --- AUDIO GRAPH (WEB AUDIO API) ---
 function buildAudioChain() {
   if (!sourceNode || !audioContext || eqNodes.length === 0) return;
   sourceNode.disconnect(); preGainNode?.disconnect(); compressorNode?.disconnect(); eqNodes.forEach(n => n.disconnect());
@@ -66,7 +62,6 @@ function toggleEffect() {
   buildAudioChain();
 }
 
-// --- ПАРСЕРЫ DOM ---
 function getActiveVideoId(): string | null {
   const urlId = new URLSearchParams(window.location.search).get('v');
   if (urlId) return urlId;
@@ -81,18 +76,15 @@ function getActiveVideoId(): string | null {
 }
 
 function getActiveTrackTitle(): string {
-  // YTM Selector
   const ytMusicTitleNode = document.querySelector('ytmusic-player-bar yt-formatted-string.title');
   if (ytMusicTitleNode && ytMusicTitleNode.textContent) return ytMusicTitleNode.textContent;
 
-  // YT Selector
   const ytTitleNode = document.querySelector('h1.ytd-watch-metadata yt-formatted-string');
   if (ytTitleNode && ytTitleNode.textContent) return ytTitleNode.textContent;
 
   return 'Неизвестный трек';
 }
 
-// --- ЛОГИКА ПЛЕЕРА ---
 function resetLooper() {
   loopStart = null;
   loopEnd = null;
@@ -117,10 +109,21 @@ function scheduleSkipsForTrack(videoId: string) {
   const trackRules = skipRules[videoId];
   if (!trackRules || !trackRules.intervals || !videoElement) return;
 
+  const currentTime = videoElement.currentTime;
+
+  const activeSkip = trackRules.intervals.find(rule => currentTime >= rule.start && currentTime < rule.end);
+
+  if (activeSkip) {
+    isSkipping = true;
+    videoElement.currentTime = activeSkip.end + 0.1;
+    setTimeout(() => { isSkipping = false; }, 500);
+    return; 
+  }
+
   trackRules.intervals.forEach(rule => {
-    const delayInMs = (rule.start - videoElement!.currentTime) * 1000;
-    
-    if (delayInMs > 0) {
+    if (rule.start > currentTime) {
+      const delayInMs = (rule.start - currentTime) * 1000;
+      
       const timerId = window.setTimeout(() => {
         if (!videoElement) return;
         isSkipping = true;
@@ -182,10 +185,9 @@ function initAudio(element: HTMLVideoElement) {
     scheduleSkipsForTrack(videoId);
   };
 
-  videoElement.addEventListener('play', handlePlaybackChange);
+  videoElement.addEventListener('playing', handlePlaybackChange);
   videoElement.addEventListener('seeked', handlePlaybackChange);
 
-  // timeupdate теперь отвечает ТОЛЬКО за лупер (минимальная нагрузка)
   videoElement.addEventListener('timeupdate', () => {
     if (isSkipping || !videoElement) return;
     
@@ -196,8 +198,6 @@ function initAudio(element: HTMLVideoElement) {
     }
   });
 }
-
-// --- УМНЫЙ ЗАПУСК ---
 const observer = new MutationObserver(() => {
   const element = document.querySelector('video');
   if (element) {
@@ -211,7 +211,6 @@ if (target) observer.observe(target, config);
 const existingMedia = document.querySelector('video');
 if (existingMedia) initAudio(existingMedia);
 
-// --- ОБРАБОТЧИКИ СООБЩЕНИЙ (API) ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'toggle') {
     toggleEffect(); sendResponse({ status: 'ok' });
