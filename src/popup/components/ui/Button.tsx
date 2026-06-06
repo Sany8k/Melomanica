@@ -19,25 +19,23 @@ export const Button = ({
   ...props
 }: ButtonProps) => {
   
-  // Собираем классы на основе пропсов
   const getVariantClass = () => {
     switch (variant) {
       case 'primary': return 'btn-primary';
       case 'success': return 'btn-success';
       case 'icon': return 'icon-btn';
       case 'danger': return 'delete-btn';
-      case 'outline': return 'btn-outline'; // Если захотим добавить контурную кнопку
+      case 'outline': return 'btn-outline';
       default: return 'btn-primary';
     }
   };
 
   const getSizeClass = () => {
-    // Если это кнопка-иконка, ей не нужны паддинги для размера
     if (variant === 'icon' || variant === 'danger') return '';
     switch (size) {
-      case 'sm': return 'padding-sm font-sm'; // В CSS: padding: 4px 8px; font-size: 11px;
-      case 'md': return 'padding-md font-md'; // В CSS: padding: 8px 16px; font-size: 12px;
-      case 'lg': return 'padding-lg font-lg'; // В CSS: padding: 15px 0; font-size: 14px;
+      case 'sm': return 'padding-sm font-sm';
+      case 'md': return 'padding-md font-md';
+      case 'lg': return 'padding-lg font-lg';
       default: return 'padding-md font-md';
     }
   };

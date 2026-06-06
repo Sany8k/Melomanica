@@ -8,7 +8,6 @@ export const i18n = {
     btnAdv: 'ПРО', btnMain: 'НАЗАД',
     menuEq: 'Эквалайзер', menuLooper: 'Лупер & Скорость', eqTitle: '10-полосный Эквалайзер', eqReset: 'СБРОСИТЬ',
     
-    // LOOPER & SKIP BTNS
     loopStartBtn: 'Начало (A)', loopEndBtn: 'Конец (B)', loopReset: 'Сброс',
     speed: 'Скорость', pitchToggle: 'Сохранять питч', pitchDesc: 'Если выкл, звук "поплывет" как на кассете',
     notSet: 'Не задано',

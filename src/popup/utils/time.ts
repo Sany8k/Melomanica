@@ -1,6 +1,5 @@
 export const parseTimeToSeconds = (timeStr: string): number | null => {
   if (!timeStr.trim()) return null;
-  // Заменяем точку, запятую, точку с запятой и пробел на двоеточие
   const normalized = timeStr.trim().replace(/[.,; ]+/g, ':');
   const parts = normalized.split(':');
 
