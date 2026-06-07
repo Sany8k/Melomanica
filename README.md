@@ -21,7 +21,7 @@ Melomanica is a high-performance browser extension that enhances your YouTube an
 
 ## 🚀 Installation for Users
 
-*(Link to Chrome Web Store will be added here upon release)*
+[You can download plugin here](https://chromewebstore.google.com/detail/jocgffimaefemnmjfdjnibimmjemffep?utm_source=item-share-cb)
 
 ## 💻 Local Development & Contributing
 
