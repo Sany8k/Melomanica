@@ -18,6 +18,34 @@ let playbackSpeed = 1.0;
 let preservesPitch = true;
 let activeSkipTimers: number[] = [];
 
+let looperAnimationFrameId: number | null = null;
+
+function startHighPrecisionLooper() {
+  if (!videoElement) return;
+
+  const checkLoop = () => {
+    if (loopStart !== null && loopEnd !== null && !isSkipping) {
+      if (videoElement!.currentTime >= loopEnd || videoElement!.currentTime < loopStart) {
+        isSkipping = true;
+        videoElement!.currentTime = loopStart;
+        setTimeout(() => { isSkipping = false; }, 50);
+      }
+    }
+    looperAnimationFrameId = requestAnimationFrame(checkLoop);
+  };
+
+  if (looperAnimationFrameId === null) {
+    looperAnimationFrameId = requestAnimationFrame(checkLoop);
+  }
+}
+
+function stopHighPrecisionLooper() {
+  if (looperAnimationFrameId !== null) {
+    cancelAnimationFrame(looperAnimationFrameId);
+    looperAnimationFrameId = null;
+  }
+}
+
 const target: HTMLElement | null = document.body;
 const config = { childList: true, subtree: true };
 
@@ -45,7 +73,10 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 
 function buildAudioChain() {
   if (!sourceNode || !audioContext || eqNodes.length === 0) return;
-  sourceNode.disconnect(); preGainNode?.disconnect(); compressorNode?.disconnect(); eqNodes.forEach(n => n.disconnect());
+  
+  try {
+    sourceNode.disconnect(); preGainNode?.disconnect(); compressorNode?.disconnect(); eqNodes.forEach(n => n.disconnect());
+  } catch(e) {}
 
   for (let i = 0; i < eqNodes.length - 1; i++) eqNodes[i].connect(eqNodes[i + 1]);
   const eqInput = eqNodes[0]; const eqOutput = eqNodes[eqNodes.length - 1];
@@ -90,6 +121,8 @@ function resetLooper() {
   loopEnd = null;
   playbackSpeed = 1.0;
   preservesPitch = true;
+  stopHighPrecisionLooper();
+
   if (videoElement) {
     videoElement.playbackRate = 1.0;
     (videoElement as any).preservesPitch = true;
@@ -151,10 +184,13 @@ function initAudio(element: HTMLVideoElement) {
     videoElement.addEventListener('play', () => audioContext?.resume(), { once: true });
   }
 
-  if (sourceNode) sourceNode.disconnect();
-  sourceNode = audioContext.createMediaElementSource(videoElement);
+  if (!sourceNode) {
+    try {
+      sourceNode = audioContext.createMediaElementSource(videoElement);
+    } catch(e) {}
+  }
 
-  if (!preGainNode) preGainNode = audioContext.createGain(); preGainNode.gain.value = 2.0;
+  if (!preGainNode) { preGainNode = audioContext.createGain(); preGainNode.gain.value = 2.0; }
   if (!compressorNode) {
     compressorNode = audioContext.createDynamicsCompressor();
     compressorNode.threshold.value = -30; compressorNode.ratio.value = 4;
@@ -187,17 +223,8 @@ function initAudio(element: HTMLVideoElement) {
 
   videoElement.addEventListener('playing', handlePlaybackChange);
   videoElement.addEventListener('seeked', handlePlaybackChange);
-
-  videoElement.addEventListener('timeupdate', () => {
-    if (isSkipping || !videoElement) return;
-    
-    if (loopStart !== null && loopEnd !== null && videoElement.currentTime >= loopEnd) {
-      isSkipping = true;
-      videoElement.currentTime = loopStart;
-      setTimeout(() => { isSkipping = false; }, 100);
-    }
-  });
 }
+
 function tryInit() {
   const element = document.querySelector('video');
   if (element && element.dataset.audioInitialized !== 'true') {
@@ -228,12 +255,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'toggle') {
     toggleEffect(); sendResponse({ status: 'ok' });
   }
+
   if (message.action === 'GET_CURRENT_SONG') {
     sendResponse({ videoId: getActiveVideoId(), title: getActiveTrackTitle() });
   }
+
   if (message.action === 'GET_CURRENT_TIME') {
     sendResponse({ currentTime: videoElement ? videoElement.currentTime : 0 });
   }
+
   if (message.action === 'PLAY_MOMENT_LOCAL' && videoElement) {
     isSkipping = true;
     videoElement.currentTime = message.time;
@@ -241,23 +271,38 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     setTimeout(() => { isSkipping = false; }, 1000);
     sendResponse({ status: 'ok' });
   }
+  
   if (message.action === 'GET_LOOPER_STATE') {
     sendResponse({ start: loopStart, end: loopEnd, speed: playbackSpeed, pitch: preservesPitch });
   }
+
   if (message.action === 'SET_LOOP_A' && videoElement) {
-    loopStart = videoElement.currentTime;
-    if (loopEnd !== null && loopStart >= loopEnd) loopEnd = null;
+    loopStart = message.time !== undefined ? message.time : videoElement.currentTime;
+    if (loopStart !== null && loopEnd !== null && loopStart >= loopEnd) {
+      loopEnd = null;
+    }
+    if (loopStart !== null && loopEnd !== null) {
+      startHighPrecisionLooper(); 
+    }
     sendResponse({ start: loopStart, end: loopEnd });
   }
+  
   if (message.action === 'SET_LOOP_B' && videoElement) {
-    loopEnd = videoElement.currentTime;
-    if (loopStart !== null && loopEnd <= loopStart) loopStart = null;
+    loopEnd = message.time !== undefined ? message.time : videoElement.currentTime;
+    if (loopStart !== null && loopEnd !== null && loopEnd <= loopStart) {
+      loopStart = null;
+    }
+    if (loopStart !== null && loopEnd !== null) {
+      startHighPrecisionLooper();
+    }
     sendResponse({ start: loopStart, end: loopEnd });
   }
+
   if (message.action === 'RESET_LOOPER') {
     resetLooper();
     sendResponse({ status: 'ok' });
   }
+
   if (message.action === 'SET_LOOPER_CONFIG' && videoElement) {
     playbackSpeed = message.speed;
     preservesPitch = message.pitch;
@@ -267,11 +312,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     (videoElement as any).webkitPreservesPitch = preservesPitch;
     sendResponse({ status: 'ok' });
   }
+
   if (message.action === 'GET_SYNC_DATA') {
     sendResponse({
       song: { videoId: getActiveVideoId(), title: getActiveTrackTitle() },
       looper: { start: loopStart, end: loopEnd, speed: playbackSpeed, pitch: preservesPitch }
     });
   }
+
   return true;
 });

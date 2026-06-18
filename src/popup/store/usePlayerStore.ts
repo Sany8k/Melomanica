@@ -24,8 +24,8 @@ interface PlayerState {
   handleEqChange: (index: number, value: string) => void;
   applyPreset: (name: string) => void;
   resetEq: () => void;
-  handleSetA: () => void;
-  handleSetB: () => void;
+  handleSetA: (time?: number) => void;
+  handleSetB: (time?: number) => void;
   handleResetLooper: () => void;
   handleConfigChange: (speed: number, pitch: boolean) => void;
 }
@@ -78,20 +78,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     chrome.storage.local.set({ eqBands: empty, activePreset: 'Flat' });
   },
 
-  handleSetA: () => {
+  handleSetA: (time?: number) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOP_A' }, (res) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOP_A', time }, (res) => {
           if (res) set((state) => ({ looperState: { ...state.looperState, start: res.start, end: res.end } }));
         });
       }
     });
   },
 
-  handleSetB: () => {
+  handleSetB: (time?: number) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOP_B' }, (res) => {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'SET_LOOP_B', time }, (res) => {
           if (res) set((state) => ({ looperState: { ...state.looperState, start: res.start, end: res.end } }));
         });
       }
