@@ -198,18 +198,31 @@ function initAudio(element: HTMLVideoElement) {
     }
   });
 }
-const observer = new MutationObserver(() => {
+function tryInit() {
   const element = document.querySelector('video');
-  if (element) {
+  if (element && element.dataset.audioInitialized !== 'true') {
     initAudio(element);
-    observer.disconnect(); 
   }
+}
+
+tryInit();
+
+document.addEventListener('yt-navigate-finish', () => {
+  setTimeout(tryInit, 500); 
 });
 
-if (target) observer.observe(target, config);
+document.addEventListener('ytmusic-navigate-finish', () => {
+  setTimeout(tryInit, 500);
+});
 
-const existingMedia = document.querySelector('video');
-if (existingMedia) initAudio(existingMedia);
+const observer = new MutationObserver(() => {
+  tryInit();
+});
+
+const targetNode = document.body || document.documentElement;
+if (targetNode) {
+  observer.observe(targetNode, { childList: true, subtree: true });
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'toggle') {
