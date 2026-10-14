@@ -5,6 +5,9 @@ import { parseTimeToSeconds } from '../utils/time';
 import { formatTime } from '../utils/formatTime';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import type { SkipRules } from '../../types/SkipRules';
+import { isSkipActive } from '../../contentScript/utils/isSkipActive';
+import './StudioSound.css';
 import './AutoSkip.css'
 
 export default function AutoSkip(): JSX.Element {
@@ -12,7 +15,7 @@ export default function AutoSkip(): JSX.Element {
   const [error, setError] = useState('');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
-  const [rules, setRules] = useState<Record<string, { title: string, intervals: { start: number; end: number }[] }>>({});
+  const [rules, setRules] = useState<SkipRules>({});
 
   const handleAddRule = () => {
     if (!currentSong) return setError(t.errEnable);
@@ -26,9 +29,11 @@ export default function AutoSkip(): JSX.Element {
 
     const newRules = { ...rules };
     const videoId = currentSong.id;
-    if (!newRules[videoId]) newRules[videoId] = { title: currentSong.title, intervals: [] };
-    newRules[videoId].intervals.push({ start: s, end: e });
-    newRules[videoId].intervals.sort((a, b) => a.start - b.start);
+    newRules[videoId] = {
+      title: newRules[videoId]?.title ?? currentSong.title,
+      intervals: [...(newRules[videoId]?.intervals ?? []), { start: s, end: e, isActive: true }]
+        .sort((a, b) => a.start - b.start),
+    };
     setRules(newRules);
     chrome.storage.local.set({ skipRules: newRules });
     setStart('');
@@ -38,8 +43,25 @@ export default function AutoSkip(): JSX.Element {
 
   const handleDeleteRule = (id: string, indexToRemove: number) => {
     const newRules = { ...rules };
-    newRules[id].intervals = newRules[id].intervals.filter((_, i) => i !== indexToRemove);
+    newRules[id] = {
+      ...rules[id],
+      intervals: rules[id].intervals.filter((_, i) => i !== indexToRemove),
+    };
     if (newRules[id].intervals.length === 0) delete newRules[id];
+    setRules(newRules);
+    chrome.storage.local.set({ skipRules: newRules });
+  };
+
+  const handleToggleRule = (id: string, indexToToggle: number) => {
+    const newRules = {
+      ...rules,
+      [id]: {
+        ...rules[id],
+        intervals: rules[id].intervals.map((rule, index) => index === indexToToggle
+          ? { ...rule, isActive: !isSkipActive(rule) }
+          : rule),
+      },
+    };
     setRules(newRules);
     chrome.storage.local.set({ skipRules: newRules });
   };
@@ -88,12 +110,25 @@ export default function AutoSkip(): JSX.Element {
 
       <div className="list-container">
         {Object.keys(rules).length === 0 ? (<div className="list-empty">Правил пока нет</div>) : (Object.entries(rules).map(([id, ruleData]) => (ruleData.intervals.map((rule, index) => (
-          <div key={`rule-${id}-${index}`} className="list-item animated-item">
-            <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', width: '180px' }}>{ruleData.title}</div>
+          <div key={`rule-${id}-${index}`} className={`list-item animated-item auto-skip-item ${isSkipActive(rule) ? '' : 'auto-skip-item-inactive'}`}>
+            <div className="auto-skip-details">
+              <div className="auto-skip-track-title" title={ruleData.title}>{ruleData.title}</div>
               <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>{formatTime(rule.start, t.notSet)} — {formatTime(rule.end, t.notSet)}</div>
             </div>
-            <Button variant="danger" onClick={() => handleDeleteRule(id, index)}>✕</Button>
+            <div className="auto-skip-actions">
+              <Button
+                variant="icon"
+                className={`toggle-bg auto-skip-toggle ${isSkipActive(rule) ? 'on' : 'off'}`}
+                role="switch"
+                aria-checked={isSkipActive(rule)}
+                aria-label={`${t.autoSkip}: ${ruleData.title}, ${formatTime(rule.start, t.notSet)} — ${formatTime(rule.end, t.notSet)}`}
+                title={isSkipActive(rule) ? t.disableSkip : t.enableSkip}
+                onClick={() => handleToggleRule(id, index)}
+              >
+                <span className="toggle-circle" />
+              </Button>
+              <Button variant="danger" onClick={() => handleDeleteRule(id, index)}>✕</Button>
+            </div>
           </div>
         )))))}
       </div>

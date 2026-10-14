@@ -1,4 +1,44 @@
 /* src/components/AutoSkip.css */
+.auto-skip-item {
+  gap: 12px;
+}
+
+.auto-skip-details {
+  flex: 1;
+  min-width: 0;
+  transition: opacity 0.2s;
+}
+
+.auto-skip-track-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.auto-skip-item-inactive .auto-skip-details {
+  opacity: 0.5;
+}
+
+.auto-skip-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.auto-skip-toggle.icon-btn {
+  padding: 0;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.auto-skip-toggle:focus-visible {
+  outline: 2px solid var(--neon-purple);
+  outline-offset: 3px;
+}
+
 .list-container {
   display: flex;
   flex-direction: column;

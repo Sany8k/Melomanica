@@ -1,3 +1,6 @@
+import type { SkipRules } from '../types/SkipRules';
+import { isSkipActive } from './utils/isSkipActive';
+
 let videoElement: HTMLVideoElement | null = null;
 let audioContext: AudioContext | null = null;
 let sourceNode: MediaElementAudioSourceNode | null = null;
@@ -49,7 +52,7 @@ function stopHighPrecisionLooper() {
 const target: HTMLElement | null = document.body;
 const config = { childList: true, subtree: true };
 
-let skipRules: Record<string, { title: string, intervals: { start: number; end: number }[] }> = {};
+let skipRules: SkipRules = {};
 
 chrome.storage.local.get(['skipRules', 'eqBands'], (result) => {
   if (result.skipRules) skipRules = result.skipRules;
@@ -144,7 +147,7 @@ function scheduleSkipsForTrack(videoId: string) {
 
   const currentTime = videoElement.currentTime;
 
-  const activeSkip = trackRules.intervals.find(rule => currentTime >= rule.start && currentTime < rule.end);
+  const activeSkip = trackRules.intervals.find(rule => isSkipActive(rule) && currentTime >= rule.start && currentTime < rule.end);
 
   if (activeSkip) {
     isSkipping = true;
@@ -154,7 +157,7 @@ function scheduleSkipsForTrack(videoId: string) {
   }
 
   trackRules.intervals.forEach(rule => {
-    if (rule.start > currentTime) {
+    if (isSkipActive(rule) && rule.start > currentTime) {
       const delayInMs = (rule.start - currentTime) * 1000;
       
       const timerId = window.setTimeout(() => {

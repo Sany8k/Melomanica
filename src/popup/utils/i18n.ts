@@ -1,5 +1,6 @@
 export const i18n = {
   ru: {
+    enableSkip: 'Включить пропуск', disableSkip: 'Отключить пропуск',
     studioSound: 'Студийный звук', agcDesc: 'Нормализация громкости', autoSkip: 'Авто-Скип',
     currentTrack: 'ТЕКУЩИЙ ТРЕК', nothingPlaying: 'Ничего не играет...', startSec: 'Старт (напр. 1:15)',
     endSec: 'Конец (напр. 2:30)', bookmarks: 'Закладки', saveMoment: 'Текущий момент',
@@ -19,6 +20,7 @@ export const i18n = {
     ]
   },
   en: {
+    enableSkip: 'Enable skip', disableSkip: 'Disable skip',
     studioSound: 'Studio Sound', agcDesc: 'Volume Normalization', autoSkip: 'Auto-Skip',
     currentTrack: 'CURRENT TRACK', nothingPlaying: 'Nothing is playing...', startSec: 'Start (e.g. 1:15)',
     endSec: 'End (e.g. 2:30)', bookmarks: 'Bookmarks', saveMoment: 'Current Time',
