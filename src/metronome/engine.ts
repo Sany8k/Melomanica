@@ -64,7 +64,6 @@ export class MetronomeEngine {
   private schedule() {
     const context = this.context!
     const { bpm, beats, subdivision, note, accentNote, volume } = this.settings
-    // Schedule against the audio clock; skip missed clicks after timer delays.
     if (this.nextTime < context.currentTime) this.nextTime = context.currentTime + 0.01
     while (this.nextTime < context.currentTime + 0.1) {
       const beat = Math.floor(this.step / subdivision)
@@ -89,7 +88,7 @@ export class MetronomeEngine {
       }
       oscillator.start(this.nextTime)
       oscillator.stop(this.nextTime + 0.07)
-      this.status // Prune past indicators even with the popup closed.
+      this.status
       this.scheduled.push({ time: this.nextTime, beat })
       this.step = (this.step + 1) % (beats * subdivision)
       this.nextTime += 60 / bpm / subdivision

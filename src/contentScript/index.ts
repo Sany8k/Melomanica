@@ -332,7 +332,6 @@ if (targetNode) {
   observer.observe(targetNode, { childList: true, subtree: true });
 }
 
-// Draft levels only live while the popup is open; + saves the persistent rule.
 chrome.runtime.onConnect.addListener(port => {
   if (port.name !== 'volume-preview') return;
   port.onMessage.addListener(message => {

@@ -1,4 +1,3 @@
-// Runs after the EQ so its band cuts and boosts still shape the bass.
 export function createUltraBassFilter(context: BaseAudioContext): BiquadFilterNode {
   const filter = context.createBiquadFilter();
   filter.type = 'lowshelf';
