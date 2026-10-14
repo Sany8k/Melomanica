@@ -1,0 +1,179 @@
+.metronome-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 16px;
+  height: 100%;
+}
+.metronome-panel {
+  min-width: 0;
+  text-align: center;
+}
+.metronome-tempo {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+.metronome-tempo strong {
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.metronome-tempo span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.metronome-beats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 26px;
+  margin-bottom: 12px;
+}
+.metronome-beats span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border-card);
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.metronome-beats .accent {
+  border-color: var(--neon-purple);
+}
+.metronome-beats .lit {
+  background: var(--neon-purple);
+  color: white;
+}
+.metronome-beats .lit.accent {
+  background: var(--neon-pink);
+  border-color: var(--neon-pink);
+}
+.metronome-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+.metronome-fields label,
+.metronome-name {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.metronome-fields .input-default,
+.metronome-name .input-default {
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.metronome-tempo-input {
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: center;
+}
+.metronome-tempo-input input {
+  max-width: 90px;
+  text-align: center;
+}
+.metronome-field-row {
+  display: flex;
+  gap: 10px;
+}
+.metronome-field-row label {
+  flex: 1;
+  min-width: 0;
+}
+.metronome-fields select {
+  background: var(--bg-dark);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  padding: 7px 9px;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 12px;
+  width: 100%;
+}
+.metronome-fields select:focus-visible {
+  outline: 1px solid var(--neon-purple);
+}
+.metronome-fields .metronome-volume {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+.metronome-volume input {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+}
+.metronome-presets {
+  border-left: 1px solid var(--border-card);
+  padding-left: 16px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.metronome-presets .section-title {
+  font-size: 13px;
+}
+.metronome-save-hint {
+  min-height: 28px;
+  line-height: 1.4;
+}
+.metronome-preset-list {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.metronome-preset {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+.metronome-preset.selected {
+  border-color: var(--neon-purple);
+  background: rgba(139, 49, 255, 0.12);
+}
+.metronome-preset-select {
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  background: transparent;
+  color: var(--text-main);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.metronome-preset-select strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.metronome-preset-select span {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.metronome-delete:hover {
+  color: var(--danger);
+}
+.metronome-error {
+  color: var(--danger);
+  font-size: 11px;
+  margin: 8px 0 0;
+}

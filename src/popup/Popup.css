@@ -10,6 +10,11 @@
   width: 600px;
 }
 
+.popup-container.metronome-wide { width: 760px; }
+.metronome-wide .adv-content { min-width: 0; }
+.metronome-wide .adv-layout { height: 450px; }
+.metronome-wide .adv-sidebar { flex-shrink: 0; }
+
 .adv-layout {
   display: flex;
   gap: 16px;

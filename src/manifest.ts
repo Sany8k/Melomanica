@@ -9,6 +9,8 @@ export default defineManifest({
   description: packageData.description,
   version: packageData.version,
   manifest_version: 3,
+  minimum_chrome_version: '116',
+  background: { service_worker: 'src/background/index.ts', type: 'module' },
   icons: {
     16: 'icons/melomanica_logo16.png',
     32: 'icons/melomanica_logo32.png',
@@ -34,6 +36,7 @@ export default defineManifest({
   ],
   "permissions": [
     "storage",
+    "offscreen",
     "activeTab",
     "scripting"
   ],

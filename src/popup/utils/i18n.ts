@@ -1,5 +1,14 @@
 export const i18n = {
   ru: {
+    menuMetronome: 'Метроном', metronomeBackground: 'Продолжает играть после закрытия окна',
+    metronomeBeats: 'Ударов в такте', metronomeNotes: 'Длительность нот',
+    metronomeTone: 'Нота удара', metronomeAccent: 'Нота акцента', metronomeVolume: 'Громкость',
+    metronomeStart: 'Запустить', metronomeStop: 'Остановить',
+    metronomePresets: 'Пресеты', metronomeNew: 'Новый пресет', metronomeSave: 'Сохранить',
+    metronomeUnsaved: 'Есть несохранённые изменения', metronomeSaveHint: 'Изменения пресета сохраняются по кнопке',
+    metronomeEmpty: 'Нет сохранённых пресетов', metronomeDelete: 'Удалить пресет',
+    metronomeAudioError: 'Не удалось подключить метроном. Попробуйте запустить снова.',
+    metronomeStorageError: 'Не удалось сохранить настройки. Проверьте свободное место.',
     editVolume: 'Изменить громкость', volumeAutoSaved: 'Изменения сохраняются автоматически.',
     globalVolume: 'Общая громкость', trackVolume: 'Громкость трека',
     trackVolumeDesc: '100% — использовать общую громкость. Другое значение имеет приоритет. Нажмите +, чтобы сохранить.',
@@ -25,6 +34,15 @@ export const i18n = {
     ]
   },
   en: {
+    menuMetronome: 'Metronome', metronomeBackground: 'Keeps playing with the popup closed',
+    metronomeBeats: 'Beats per bar', metronomeNotes: 'Note duration',
+    metronomeTone: 'Beat note', metronomeAccent: 'Accent note', metronomeVolume: 'Volume',
+    metronomeStart: 'Start', metronomeStop: 'Stop',
+    metronomePresets: 'Presets', metronomeNew: 'New preset', metronomeSave: 'Save',
+    metronomeUnsaved: 'Unsaved changes', metronomeSaveHint: 'Press Save to update a preset',
+    metronomeEmpty: 'No saved presets', metronomeDelete: 'Delete preset',
+    metronomeAudioError: 'Could not connect to the metronome. Try starting it again.',
+    metronomeStorageError: 'Could not save settings. Check available storage.',
     editVolume: 'Edit volume', volumeAutoSaved: 'Changes are saved automatically.',
     globalVolume: 'Global Volume', trackVolume: 'Track Volume',
     trackVolumeDesc: '100% uses global volume. Any other value overrides it. Press + to save.',

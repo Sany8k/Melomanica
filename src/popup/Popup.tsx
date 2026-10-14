@@ -6,6 +6,7 @@ import AutoSkip from './components/AutoSkip';
 import Bookmarks from './components/Bookmarks';
 import EqControls from './components/EqControls';
 import LooperControls from './components/LooperControls';
+import Metronome from './components/Metronome';
 import { useAppContext } from './utils/AppContext';
 import { usePlayerStore } from './store/usePlayerStore';
 import TrackVolume, { GlobalVolume } from './components/VolumeControls';
@@ -16,7 +17,7 @@ export const Popup = () => {
   const setPlayerState = usePlayerStore.setState;
   
   const [view, setView] = useState<'main' | 'advanced'>('main');
-  const [advTab, setAdvTab] = useState<'eq' | 'looper'>('eq');
+  const [advTab, setAdvTab] = useState<'eq' | 'looper' | 'metronome'>('eq');
 
   useEffect(syncVolumeSettings, []);
 
@@ -54,7 +55,7 @@ export const Popup = () => {
   }, [setLang, setCurrentSong, setPlayerState]);
 
   return (
-    <div className={`popup-container ${view === 'advanced' ? 'wide' : ''}`}>
+    <div className={`popup-container ${view === 'advanced' ? 'wide' : ''} ${view === 'advanced' && advTab === 'metronome' ? 'metronome-wide' : ''}`}>
       <Header view={view} setView={setView} />
 
       {view === 'main' ? (
@@ -73,11 +74,13 @@ export const Popup = () => {
           <div className="adv-sidebar">
             <div className={`adv-tab ${advTab === 'eq' ? 'active' : ''}`} onClick={() => setAdvTab('eq')}>{t.menuEq}</div>
             <div className={`adv-tab ${advTab === 'looper' ? 'active' : ''}`} onClick={() => setAdvTab('looper')}>{t.menuLooper}</div>
+            <div className={`adv-tab ${advTab === 'metronome' ? 'active' : ''}`} onClick={() => setAdvTab('metronome')}>{t.menuMetronome}</div>
           </div>
           
           <div className="adv-content">
             {advTab === 'eq' && <EqControls />}
             {advTab === 'looper' && <LooperControls />}
+            {advTab === 'metronome' && <Metronome />}
           </div>
         </div>
       )}
