@@ -6,6 +6,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Card } from './ui/Card';
+import { SliderReset } from './ui/SliderReset';
 import './LooperControls.css';
 
 export default function LooperControls(): JSX.Element {
@@ -91,7 +92,11 @@ export default function LooperControls(): JSX.Element {
         <div className="speed-section">
           <div className="flex-between speed-header">
             <h4 className="speed-title">{t.speed}</h4>
-            <div className="speed-value">{looperState.speed.toFixed(2)}x</div>
+            <div className="speed-slider-actions">
+              <div className="speed-value">{looperState.speed.toFixed(2)}x</div>
+              <SliderReset label={t.speed} disabled={!currentSong}
+                onReset={() => handleConfigChange(1, looperState.pitch)} />
+            </div>
           </div>
 
           <input

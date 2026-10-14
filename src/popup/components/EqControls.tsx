@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppContext } from '../utils/AppContext';
 import { usePlayerStore, EQ_PRESETS } from '../store/usePlayerStore';
 import { Button } from './ui/Button';
+import { SliderReset } from './ui/SliderReset';
 import './EqControls.css';
 
 export default function EqControls() {
@@ -59,6 +60,7 @@ export default function EqControls() {
               <div className="eq-freq">{band.f}</div>
               <div className="eq-val">{eqBands[i] > 0 ? `+${eqBands[i]}` : eqBands[i]}</div>
               <input type="range" className="eq-slider" min="-12" max="12" step="1" value={eqBands[i]} onChange={(e) => handleEqChange(i, e.target.value)} />
+              <SliderReset label={`${band.f} Hz`} onReset={() => handleEqChange(i, '0')} />
               <div className="eq-desc" title={band.desc}>{band.desc}</div>
             </div>
           ))}

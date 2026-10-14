@@ -1,11 +1,31 @@
 import type { SkipRules } from '../types/SkipRules';
 import { isSkipActive } from './utils/isSkipActive';
+import { createOutputLimiter } from './utils/createOutputLimiter';
+import { DEFAULT_VOLUME, getEffectiveVolume, getVolumeGains, normalizeVolume, type VolumeRules } from '../types/VolumeRules';
 
-let videoElement: HTMLVideoElement | null = null;
+let videoElement: HTMLMediaElement | null = null;
 let audioContext: AudioContext | null = null;
 let sourceNode: MediaElementAudioSourceNode | null = null;
 let compressorNode: DynamicsCompressorNode | null = null;
 let preGainNode: GainNode | null = null;
+let volumeGainNode: GainNode | null = null;
+let masterGainNode: GainNode | null = null;
+let outputLimiterNode: DynamicsCompressorNode | null = null;
+const mediaSources = new WeakMap<HTMLMediaElement, MediaElementAudioSourceNode>();
+let globalVolume = DEFAULT_VOLUME;
+let volumeRules: VolumeRules = {};
+let volumePreview: { videoId: string; volume: number; port: chrome.runtime.Port } | null = null;
+
+function applyVolume() {
+  if (!volumeGainNode || !masterGainNode || !audioContext) return;
+  const videoId = getActiveVideoId();
+  const volume = volumePreview?.videoId === videoId
+    ? volumePreview.volume
+    : getEffectiveVolume(DEFAULT_VOLUME, volumeRules, videoId);
+  const gains = getVolumeGains(globalVolume, volume);
+  volumeGainNode.gain.setTargetAtTime(gains.boost, audioContext.currentTime, 0.015);
+  masterGainNode.gain.setTargetAtTime(gains.master, audioContext.currentTime, 0.015);
+}
 
 let eqNodes: BiquadFilterNode[] = [];
 const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
@@ -54,13 +74,29 @@ const config = { childList: true, subtree: true };
 
 let skipRules: SkipRules = {};
 
-chrome.storage.local.get(['skipRules', 'eqBands'], (result) => {
+chrome.storage.local.get(['skipRules', 'eqBands', 'globalVolume', 'volumeRules'], (result) => {
   if (result.skipRules) skipRules = result.skipRules;
   if (result.eqBands) currentEqBands = result.eqBands;
+  globalVolume = normalizeVolume(result.globalVolume);
+  volumeRules = result.volumeRules || {};
+  currentEqBands.forEach((value, i) => {
+    if (eqNodes[i]) eqNodes[i].gain.value = value;
+  });
+  applyVolume();
+  if (currentVideoId) scheduleSkipsForTrack(currentVideoId);
 });
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local') {
+    if (changes.globalVolume) globalVolume = normalizeVolume(changes.globalVolume.newValue);
+    if (changes.volumeRules) {
+      const nextRules: VolumeRules = changes.volumeRules.newValue || {};
+      if (volumePreview && JSON.stringify(volumeRules[volumePreview.videoId]) !== JSON.stringify(nextRules[volumePreview.videoId])) {
+        volumePreview = null;
+      }
+      volumeRules = nextRules;
+    }
+    if (changes.globalVolume || changes.volumeRules) applyVolume();
     if (changes.skipRules) {
       skipRules = changes.skipRules.newValue || {};
       if (currentVideoId) scheduleSkipsForTrack(currentVideoId);
@@ -75,20 +111,22 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 });
 
 function buildAudioChain() {
-  if (!sourceNode || !audioContext || eqNodes.length === 0) return;
+  if (!sourceNode || !audioContext || !volumeGainNode || !outputLimiterNode || eqNodes.length === 0) return;
   
   try {
-    sourceNode.disconnect(); preGainNode?.disconnect(); compressorNode?.disconnect(); eqNodes.forEach(n => n.disconnect());
+    sourceNode.disconnect(); preGainNode?.disconnect(); compressorNode?.disconnect(); volumeGainNode.disconnect(); eqNodes.forEach(n => n.disconnect());
   } catch(e) {}
 
   for (let i = 0; i < eqNodes.length - 1; i++) eqNodes[i].connect(eqNodes[i + 1]);
   const eqInput = eqNodes[0]; const eqOutput = eqNodes[eqNodes.length - 1];
 
   if (isNormalized && preGainNode && compressorNode) {
-    sourceNode.connect(preGainNode); preGainNode.connect(eqInput); eqOutput.connect(compressorNode); compressorNode.connect(audioContext.destination);
+    sourceNode.connect(preGainNode); preGainNode.connect(eqInput); eqOutput.connect(compressorNode); compressorNode.connect(volumeGainNode);
   } else {
-    sourceNode.connect(eqInput); eqOutput.connect(audioContext.destination);
+    sourceNode.connect(eqInput); eqOutput.connect(volumeGainNode);
   }
+  volumeGainNode.connect(outputLimiterNode);
+  applyVolume();
 }
 
 function toggleEffect() {
@@ -172,11 +210,11 @@ function scheduleSkipsForTrack(videoId: string) {
   });
 }
 
-function initAudio(element: HTMLVideoElement) {
-  if (element.dataset.audioInitialized === 'true') return;
-  element.dataset.audioInitialized = 'true';
-
+function initAudio(element: HTMLMediaElement) {
   if (videoElement === element) return;
+  sourceNode?.disconnect();
+  clearSkipMemory();
+  resetLooper();
   videoElement = element;
 
   if (!audioContext) audioContext = new window.AudioContext();
@@ -187,12 +225,20 @@ function initAudio(element: HTMLVideoElement) {
     videoElement.addEventListener('play', () => audioContext?.resume(), { once: true });
   }
 
+  sourceNode = mediaSources.get(element) || null;
   if (!sourceNode) {
     try {
       sourceNode = audioContext.createMediaElementSource(videoElement);
-    } catch(e) {}
+      mediaSources.set(element, sourceNode);
+    } catch(e) { return; }
   }
 
+  if (!volumeGainNode) volumeGainNode = audioContext.createGain();
+  if (!masterGainNode) {
+    masterGainNode = audioContext.createGain();
+    masterGainNode.connect(audioContext.destination);
+  }
+  if (!outputLimiterNode) outputLimiterNode = createOutputLimiter(audioContext, masterGainNode);
   if (!preGainNode) { preGainNode = audioContext.createGain(); preGainNode.gain.value = 2.0; }
   if (!compressorNode) {
     compressorNode = audioContext.createDynamicsCompressor();
@@ -213,25 +259,42 @@ function initAudio(element: HTMLVideoElement) {
   });
 
   const handlePlaybackChange = () => {
+    if (videoElement !== element) return;
     const videoId = getActiveVideoId();
     if (!videoId || !videoElement) return;
 
     if (currentVideoId !== videoId) {
       currentVideoId = videoId;
+      volumePreview = null;
       resetLooper();
     }
     
+    applyVolume();
     scheduleSkipsForTrack(videoId);
   };
 
-  videoElement.addEventListener('playing', handlePlaybackChange);
-  videoElement.addEventListener('seeked', handlePlaybackChange);
+  if (element.dataset.audioInitialized !== 'true') {
+    element.dataset.audioInitialized = 'true';
+    element.addEventListener('playing', handlePlaybackChange);
+    element.addEventListener('seeked', handlePlaybackChange);
+    element.addEventListener('loadedmetadata', handlePlaybackChange);
+  }
+  handlePlaybackChange();
 }
 
 function tryInit() {
-  const element = document.querySelector('video');
-  if (element && element.dataset.audioInitialized !== 'true') {
+  const element = document.querySelector<HTMLMediaElement>('video, audio');
+  if (element && element !== videoElement) {
     initAudio(element);
+  }
+  const videoId = getActiveVideoId();
+  if (videoId !== currentVideoId) {
+    currentVideoId = videoId;
+    volumePreview = null;
+    resetLooper();
+    clearSkipMemory();
+    applyVolume();
+    if (videoId) scheduleSkipsForTrack(videoId);
   }
 }
 
@@ -253,6 +316,21 @@ const targetNode = document.body || document.documentElement;
 if (targetNode) {
   observer.observe(targetNode, { childList: true, subtree: true });
 }
+
+// Draft levels only live while the popup is open; + saves the persistent rule.
+chrome.runtime.onConnect.addListener(port => {
+  if (port.name !== 'volume-preview') return;
+  port.onMessage.addListener(message => {
+    if (typeof message.videoId !== 'string' || message.videoId !== getActiveVideoId()) return;
+    volumePreview = { videoId: message.videoId, volume: normalizeVolume(message.volume), port };
+    applyVolume();
+  });
+  port.onDisconnect.addListener(() => {
+    if (volumePreview?.port !== port) return;
+    volumePreview = null;
+    applyVolume();
+  });
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'toggle') {

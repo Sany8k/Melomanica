@@ -8,6 +8,8 @@ import EqControls from './components/EqControls';
 import LooperControls from './components/LooperControls';
 import { useAppContext } from './utils/AppContext';
 import { usePlayerStore } from './store/usePlayerStore';
+import TrackVolume, { GlobalVolume } from './components/VolumeControls';
+import { syncVolumeSettings } from './store/useVolumeStore';
 
 export const Popup = () => {
   const { t, setLang, setCurrentSong } = useAppContext();
@@ -15,6 +17,8 @@ export const Popup = () => {
   
   const [view, setView] = useState<'main' | 'advanced'>('main');
   const [advTab, setAdvTab] = useState<'eq' | 'looper'>('eq');
+
+  useEffect(syncVolumeSettings, []);
 
   useEffect(() => {
     chrome.storage.local.get(['lang', 'isFilterOn', 'eqBands', 'activePreset', 'customEqBands'], (data) => {
@@ -28,12 +32,14 @@ export const Popup = () => {
       });
     });
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const refreshPlayer = () => chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
         chrome.tabs.sendMessage(tabs[0].id, { action: 'GET_SYNC_DATA' }, (response) => {
           if (!chrome.runtime.lastError && response) {
             if (response.song && response.song.videoId) {
               setCurrentSong({ id: response.song.videoId, title: response.song.title });
+            } else {
+              setCurrentSong(null);
             }
             if (response.looper) {
               setPlayerState({ looperState: response.looper });
@@ -42,6 +48,9 @@ export const Popup = () => {
         });
       }
     });
+    refreshPlayer();
+    const timer = window.setInterval(refreshPlayer, 1000);
+    return () => window.clearInterval(timer);
   }, [setLang, setCurrentSong, setPlayerState]);
 
   return (
@@ -51,6 +60,9 @@ export const Popup = () => {
       {view === 'main' ? (
         <div className="animated-item">
           <StudioSound />
+          <GlobalVolume />
+          <hr className="divider" />
+          <TrackVolume />
           <hr className="divider" />
           <AutoSkip />
           <hr className="divider" />

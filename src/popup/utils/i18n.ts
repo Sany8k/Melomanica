@@ -1,5 +1,10 @@
 export const i18n = {
   ru: {
+    editVolume: 'Изменить громкость', volumeAutoSaved: 'Изменения сохраняются автоматически.',
+    globalVolume: 'Общая громкость', trackVolume: 'Громкость трека',
+    trackVolumeDesc: '100% — использовать общую громкость. Другое значение имеет приоритет. Нажмите +, чтобы сохранить.',
+    saveVolume: 'Сохранить громкость трека', noVolumeRules: 'Нет сохранённых настроек громкости.',
+    enableVolume: 'Включить громкость трека', disableVolume: 'Отключить громкость трека', deleteVolume: 'Удалить настройку громкости',
     enableSkip: 'Включить пропуск', disableSkip: 'Отключить пропуск',
     studioSound: 'Студийный звук', agcDesc: 'Нормализация громкости', autoSkip: 'Авто-Скип',
     currentTrack: 'ТЕКУЩИЙ ТРЕК', nothingPlaying: 'Ничего не играет...', startSec: 'Старт (напр. 1:15)',
@@ -20,6 +25,11 @@ export const i18n = {
     ]
   },
   en: {
+    editVolume: 'Edit volume', volumeAutoSaved: 'Changes are saved automatically.',
+    globalVolume: 'Global Volume', trackVolume: 'Track Volume',
+    trackVolumeDesc: '100% uses global volume. Any other value overrides it. Press + to save.',
+    saveVolume: 'Save track volume', noVolumeRules: 'No saved volume settings.',
+    enableVolume: 'Enable track volume', disableVolume: 'Disable track volume', deleteVolume: 'Delete volume setting',
     enableSkip: 'Enable skip', disableSkip: 'Disable skip',
     studioSound: 'Studio Sound', agcDesc: 'Volume Normalization', autoSkip: 'Auto-Skip',
     currentTrack: 'CURRENT TRACK', nothingPlaying: 'Nothing is playing...', startSec: 'Start (e.g. 1:15)',

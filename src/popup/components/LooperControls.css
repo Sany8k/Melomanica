@@ -73,6 +73,8 @@
 }
 
 .speed-section {
+  user-select: none;
+  -webkit-user-select: none;
   margin-bottom: 20px;
 }
 
@@ -217,4 +219,10 @@
 
 .success-input-box {
   border-color: rgba(48, 209, 88, 0.3);
+}
+
+.speed-slider-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
