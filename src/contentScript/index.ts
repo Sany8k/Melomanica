@@ -1,6 +1,7 @@
 import type { SkipRules } from '../types/SkipRules';
 import { isSkipActive } from './utils/isSkipActive';
 import { createOutputLimiter } from './utils/createOutputLimiter';
+import { createUltraBassFilter, setUltraBassEnabled } from './utils/createUltraBassFilter';
 import { DEFAULT_VOLUME, getEffectiveVolume, getVolumeGains, normalizeVolume, type VolumeRules } from '../types/VolumeRules';
 
 let videoElement: HTMLMediaElement | null = null;
@@ -28,6 +29,8 @@ function applyVolume() {
 }
 
 let eqNodes: BiquadFilterNode[] = [];
+let ultraBassNode: BiquadFilterNode | null = null;
+let ultraBassEnabled = false;
 const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
 let isNormalized = true;
@@ -74,9 +77,11 @@ const config = { childList: true, subtree: true };
 
 let skipRules: SkipRules = {};
 
-chrome.storage.local.get(['skipRules', 'eqBands', 'globalVolume', 'volumeRules'], (result) => {
+chrome.storage.local.get(['skipRules', 'eqBands', 'ultraBassEnabled', 'globalVolume', 'volumeRules'], (result) => {
   if (result.skipRules) skipRules = result.skipRules;
   if (result.eqBands) currentEqBands = result.eqBands;
+  ultraBassEnabled = result.ultraBassEnabled === true;
+  if (ultraBassNode && audioContext) setUltraBassEnabled(ultraBassNode, ultraBassEnabled, audioContext.currentTime);
   globalVolume = normalizeVolume(result.globalVolume);
   volumeRules = result.volumeRules || {};
   currentEqBands.forEach((value, i) => {
@@ -107,23 +112,29 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         if (eqNodes[i]) eqNodes[i].gain.value = val;
       });
     }
+    if (changes.ultraBassEnabled) {
+      ultraBassEnabled = changes.ultraBassEnabled.newValue === true;
+      if (ultraBassNode && audioContext) setUltraBassEnabled(ultraBassNode, ultraBassEnabled, audioContext.currentTime);
+    }
   }
 });
 
 function buildAudioChain() {
-  if (!sourceNode || !audioContext || !volumeGainNode || !outputLimiterNode || eqNodes.length === 0) return;
+  if (!sourceNode || !audioContext || !volumeGainNode || !outputLimiterNode || !ultraBassNode || eqNodes.length === 0) return;
   
   try {
     sourceNode.disconnect(); preGainNode?.disconnect(); compressorNode?.disconnect(); volumeGainNode.disconnect(); eqNodes.forEach(n => n.disconnect());
+    ultraBassNode.disconnect();
   } catch(e) {}
 
   for (let i = 0; i < eqNodes.length - 1; i++) eqNodes[i].connect(eqNodes[i + 1]);
   const eqInput = eqNodes[0]; const eqOutput = eqNodes[eqNodes.length - 1];
+  eqOutput.connect(ultraBassNode);
 
   if (isNormalized && preGainNode && compressorNode) {
-    sourceNode.connect(preGainNode); preGainNode.connect(eqInput); eqOutput.connect(compressorNode); compressorNode.connect(volumeGainNode);
+    sourceNode.connect(preGainNode); preGainNode.connect(eqInput); ultraBassNode.connect(compressorNode); compressorNode.connect(volumeGainNode);
   } else {
-    sourceNode.connect(eqInput); eqOutput.connect(volumeGainNode);
+    sourceNode.connect(eqInput); ultraBassNode.connect(volumeGainNode);
   }
   volumeGainNode.connect(outputLimiterNode);
   applyVolume();
@@ -251,6 +262,10 @@ function initAudio(element: HTMLMediaElement) {
       node.type = 'peaking'; node.frequency.value = freq; node.Q.value = 1.41; node.gain.value = currentEqBands[i] || 0;
       eqNodes.push(node);
     });
+  }
+  if (!ultraBassNode) {
+    ultraBassNode = createUltraBassFilter(audioContext);
+    setUltraBassEnabled(ultraBassNode, ultraBassEnabled, audioContext.currentTime);
   }
   
   chrome.storage.local.get(['isFilterOn'], (data) => {

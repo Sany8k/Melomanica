@@ -30,6 +30,11 @@
   padding-right: 16px;
 }
 
+.adv-layout.eq-layout {
+  height: auto;
+  min-height: 420px;
+}
+
 .adv-tab {
   padding: 8px 12px;
   font-size: 13px;

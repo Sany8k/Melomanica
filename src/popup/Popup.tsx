@@ -22,11 +22,12 @@ export const Popup = () => {
   useEffect(syncVolumeSettings, []);
 
   useEffect(() => {
-    chrome.storage.local.get(['lang', 'isFilterOn', 'eqBands', 'activePreset', 'customEqBands'], (data) => {
+    chrome.storage.local.get(['lang', 'isFilterOn', 'eqBands', 'ultraBassEnabled', 'activePreset', 'customEqBands'], (data) => {
       if (data.lang) setLang(data.lang);
 
       setPlayerState({
         isFilterOn: data.isFilterOn !== undefined ? data.isFilterOn : true,
+        ultraBassEnabled: data.ultraBassEnabled === true,
         eqBands: data.eqBands || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         activePreset: data.activePreset || 'Flat',
         customEqBands: data.customEqBands || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -70,7 +71,7 @@ export const Popup = () => {
           <Bookmarks />
         </div>
       ) : (
-        <div className="adv-layout animated-item">
+        <div className={`adv-layout animated-item ${advTab === 'eq' ? 'eq-layout' : ''}`}>
           <div className="adv-sidebar">
             <div className={`adv-tab ${advTab === 'eq' ? 'active' : ''}`} onClick={() => setAdvTab('eq')}>{t.menuEq}</div>
             <div className={`adv-tab ${advTab === 'looper' ? 'active' : ''}`} onClick={() => setAdvTab('looper')}>{t.menuLooper}</div>

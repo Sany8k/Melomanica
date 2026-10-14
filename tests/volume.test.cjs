@@ -23,6 +23,7 @@ function harness(initial = {}, cache = new Map()) {
   const gains = []
   const sources = []
   const compressors = []
+  const filters = []
   const chrome = {
     storage: {
       local: {
@@ -91,7 +92,12 @@ function harness(initial = {}, cache = new Map()) {
       return compressor
     }
     createBiquadFilter() {
-      return { ...node(), frequency: {}, Q: {}, gain: {} }
+      const filter = { ...node(), frequency: {}, Q: {}, gain: {
+        value: 0,
+        setTargetAtTime(value) { this.value = value },
+      } }
+      filters.push(filter)
+      return filter
     }
   }
   let mutation
@@ -152,6 +158,7 @@ function harness(initial = {}, cache = new Map()) {
     sources,
     gains,
     compressors,
+    filters,
     flush: () => {
       while (pending.length) pending.shift()()
     },
@@ -175,6 +182,53 @@ function harness(initial = {}, cache = new Map()) {
 }
 
 const rules = { 'track-a': { title: 'Track A', volume: 180, isActive: true } }
+
+test('Ultra Bass is a persistent extra filter after EQ, independent of Studio Sound', () => {
+  const bands = [6, 5, 4, 2, 0, 0, 0, 0, 0, 0]
+  const app = harness({ eqBands: bands, ultraBassEnabled: true, isFilterOn: false })
+  app.load('src/contentScript/index.ts')
+  app.flush()
+  const bass = app.filters[10]
+  assert.equal(bass.type, 'lowshelf')
+  assert.equal(bass.gain.value, 18)
+  assert.equal(app.filters[9].connections[0], bass)
+  assert.equal(bass.connections[0], app.gains[0])
+  assert.deepEqual(app.filters.slice(0, 10).map(filter => filter.gain.value), bands)
+  app.chrome.storage.local.set({ eqBands: [-12, -12, -12, 0, 0, 0, 0, 0, 0, 0] })
+  assert.equal(app.filters[0].gain.value, -12)
+  assert.equal(bass.gain.value, 18)
+  app.chrome.storage.local.set({ ultraBassEnabled: false })
+  assert.equal(bass.gain.value, 0)
+  assert.equal(app.filters[0].gain.value, -12)
+  app.chrome.storage.local.set({ ultraBassEnabled: true })
+  for (let i = 0; i < 4; i++) app.toggleStudio()
+  app.replaceMedia()
+  app.flush()
+  assert.equal(app.filters.length, 11)
+  assert.equal(app.filters[9].connections.length, 1)
+  assert.equal(bass.connections.length, 1)
+  assert.equal(bass.gain.value, 18)
+  const reloaded = harness(app.data)
+  reloaded.load('src/contentScript/index.ts')
+  reloaded.flush()
+  assert.equal(reloaded.filters[10].gain.value, 18)
+})
+
+test('Ultra Bass toggle leaves EQ bands and presets intact and survives EQ reset', () => {
+  const app = harness()
+  const { usePlayerStore } = app.load('src/popup/store/usePlayerStore.ts')
+  const player = () => usePlayerStore.getState()
+  player().applyPreset('Bass Boost')
+  const before = [...player().eqBands]
+  player().toggleUltraBass()
+  assert.equal(app.data.ultraBassEnabled, true)
+  assert.equal(player().activePreset, 'Bass Boost')
+  assert.deepEqual([...player().eqBands], before)
+  player().resetEq()
+  assert.equal(player().ultraBassEnabled, true)
+  player().toggleUltraBass()
+  assert.equal(app.data.ultraBassEnabled, false)
+})
 
 test('non-default saved track volume overrides global volume and restores after reload', () => {
   const app = harness({ globalVolume: 40, volumeRules: rules })

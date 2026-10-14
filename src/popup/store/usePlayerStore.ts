@@ -10,6 +10,7 @@ export const EQ_PRESETS: Record<string, number[]> = {
 
 interface PlayerState {
   isFilterOn: boolean;
+  ultraBassEnabled: boolean;
   eqBands: number[];
   activePreset: string;
   customEqBands: number[];
@@ -21,6 +22,7 @@ interface PlayerState {
   };
   
   toggleAudioFilter: () => Promise<void>;
+  toggleUltraBass: () => void;
   handleEqChange: (index: number, value: string) => void;
   applyPreset: (name: string) => void;
   resetEq: () => void;
@@ -32,6 +34,7 @@ interface PlayerState {
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   isFilterOn: true,
+  ultraBassEnabled: false,
   eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   activePreset: 'Flat',
   customEqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -46,6 +49,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { action: 'toggle' });
+  },
+
+  toggleUltraBass: () => {
+    const ultraBassEnabled = !get().ultraBassEnabled;
+    set({ ultraBassEnabled });
+    chrome.storage.local.set({ ultraBassEnabled });
   },
 
   handleEqChange: (index, value) => {

@@ -12,6 +12,8 @@ export default function EqControls() {
   const handleEqChange = usePlayerStore(state => state.handleEqChange);
   const applyPreset = usePlayerStore(state => state.applyPreset);
   const resetEq = usePlayerStore(state => state.resetEq);
+  const ultraBassEnabled = usePlayerStore(state => state.ultraBassEnabled);
+  const toggleUltraBass = usePlayerStore(state => state.toggleUltraBass);
 
   return (
     <>
@@ -64,6 +66,20 @@ export default function EqControls() {
               <div className="eq-desc" title={band.desc}>{band.desc}</div>
             </div>
           ))}
+        </div>
+        <div className={`ultra-bass-control ${ultraBassEnabled ? 'active' : ''}`}>
+          <div>
+            <h3 className="section-title">Ultra Bass Mode</h3>
+            <p className="section-desc">{t.ultraBassDesc}</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={ultraBassEnabled}
+            aria-label="Ultra Bass Mode"
+            className={`toggle-bg ${ultraBassEnabled ? 'on' : 'off'}`}
+            onClick={toggleUltraBass}
+          ><span className="toggle-circle" /></button>
         </div>
       </div>
     </>

@@ -1,5 +1,6 @@
 export const i18n = {
   ru: {
+    ultraBassDesc: 'Мощное усиление баса (+18 дБ) поверх настроек эквалайзера.',
     menuMetronome: 'Метроном', metronomeBackground: 'Продолжает играть после закрытия окна',
     metronomeBeats: 'Ударов в такте', metronomeNotes: 'Длительность нот',
     metronomeTone: 'Нота удара', metronomeAccent: 'Нота акцента', metronomeVolume: 'Громкость',
@@ -34,6 +35,7 @@ export const i18n = {
     ]
   },
   en: {
+    ultraBassDesc: 'Powerful bass boost (+18 dB) on top of your equalizer settings.',
     menuMetronome: 'Metronome', metronomeBackground: 'Keeps playing with the popup closed',
     metronomeBeats: 'Beats per bar', metronomeNotes: 'Note duration',
     metronomeTone: 'Beat note', metronomeAccent: 'Accent note', metronomeVolume: 'Volume',
